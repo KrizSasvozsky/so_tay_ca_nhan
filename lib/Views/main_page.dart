@@ -13,6 +13,7 @@ import 'package:so_tay_mon_an/Models/meal_type.dart';
 import 'package:so_tay_mon_an/Models/meal_type_string.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Views/activity_feed_notification.dart';
+import 'package:so_tay_mon_an/Views/ingredient_page.dart';
 import 'package:so_tay_mon_an/Views/post_meal.dart';
 import 'package:so_tay_mon_an/Views/profile_page.dart';
 import 'package:so_tay_mon_an/Views/search_page.dart';
@@ -108,6 +109,9 @@ class _MainPageState extends State<MainPage> {
                     currentUser: user,
                   ),
                 ),
+                IngredientPage(
+                  user: user,
+                ),
                 ChangeNotifierProvider(
                   create: (context) => FeedList([]),
                   child: ActivityFeedNotiFyPage(
@@ -175,7 +179,7 @@ class _MainPageState extends State<MainPage> {
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.solidBell,
+                          FontAwesomeIcons.balanceScale,
                           color:
                               _selectedTab == 1 ? Colors.black : Colors.white,
                           size: 20,
@@ -196,9 +200,10 @@ class _MainPageState extends State<MainPage> {
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.plusCircle,
+                          FontAwesomeIcons.solidBell,
                           color:
                               _selectedTab == 2 ? Colors.black : Colors.white,
+                          size: 20,
                         ),
                       ),
                     ),
@@ -216,10 +221,9 @@ class _MainPageState extends State<MainPage> {
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.search,
+                          FontAwesomeIcons.plusCircle,
                           color:
                               _selectedTab == 3 ? Colors.black : Colors.white,
-                          size: 20,
                         ),
                       ),
                     ),
@@ -237,9 +241,30 @@ class _MainPageState extends State<MainPage> {
                           });
                         },
                         icon: Icon(
-                          FontAwesomeIcons.solidUser,
+                          FontAwesomeIcons.search,
                           color:
                               _selectedTab == 4 ? Colors.black : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            pageController.animateToPage(
+                              5,
+                              duration: const Duration(
+                                milliseconds: 300,
+                              ),
+                              curve: Curves.easeInOut,
+                            );
+                          });
+                        },
+                        icon: Icon(
+                          FontAwesomeIcons.solidUser,
+                          color:
+                              _selectedTab == 5 ? Colors.black : Colors.white,
                           size: 20,
                         ),
                       ),
@@ -254,23 +279,4 @@ class _MainPageState extends State<MainPage> {
       designSize: const Size(412, 732),
     );
   }
-
-  Widget mainPage() => ChangeNotifierProvider(
-        create: (context) => MealTypeString(),
-        child: Stack(
-          children: [
-            //background
-            const BackGround(),
-            //Horizontal listview
-            MainHorizontalListView(),
-            //meals
-            Container(
-              margin: const EdgeInsets.fromLTRB(14, 168, 14, 46),
-              child: MealsListView(
-                user: user,
-              ),
-            ),
-          ],
-        ),
-      );
 }

@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:so_tay_mon_an/Services/flutter_firebase.dart';
 import 'package:so_tay_mon_an/Widgets/animated_background.dart';
+import 'package:so_tay_mon_an/Widgets/forget_password_dialog.dart';
 import 'Models/user.dart';
 import 'Views/main_page.dart';
 import 'Views/registration_page.dart';
@@ -13,6 +15,7 @@ import 'Views/login_page.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 
 GoogleSignIn _googleSignIn = GoogleSignIn();
+final navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -36,6 +39,7 @@ class _MyApp extends State<MyApp> {
   int pageIndex = 0;
   late Users user;
   String bio = "";
+  final auth = FirebaseAuth.instance;
 
   List<Color> colorList = [
     Colors.red,
@@ -63,6 +67,10 @@ class _MyApp extends State<MyApp> {
     }, onError: (err) {
       print('Error signing in: $err');
     });
+    _googleSignIn
+        .signInSilently(suppressErrors: false)
+        .then((account) => handleSignIn(account))
+        .catchError((err) => print('Error signing in: $err'));
   }
 
   Widget _renderWidget() {
@@ -133,173 +141,195 @@ class _MyApp extends State<MyApp> {
     double _buttonRadius = 15;
     double _logoSize = 65;
     return _isAuth
-        ? ScreenUtilInit(
-            builder: () => MaterialApp(
-              theme: ThemeData(
-                scaffoldBackgroundColor: Colors.black,
-              ),
-              home: MainPage(
-                user: user,
-              ),
+        ? MaterialApp(
+            theme: ThemeData(
+              scaffoldBackgroundColor: Colors.black,
             ),
-            designSize: const Size(412, 732),
+            home: MainPage(
+              user: user,
+            ),
           )
-        : ScreenUtilInit(
-            builder: () => MaterialApp(
-              theme: ThemeData(
-                scaffoldBackgroundColor: Colors.black,
-              ),
-              home: Scaffold(
-                appBar: null,
-                body: GestureDetector(
-                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                  child: Stack(
-                    children: [
-                      //gradient background
-                      AnimatedBackground(),
-                      Center(
-                        child: ListView(
-                          shrinkWrap: true,
-                          children: [
-                            //container 2 nút đăng nhập và đăng ký
-                            Container(
-                              decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 6, 16, 38),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(_buttonRadius),
-                                    topRight: Radius.circular(_buttonRadius),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.5),
-                                      spreadRadius: 2,
-                                      blurRadius: 7,
-                                      offset: const Offset(0, 3),
-                                    )
-                                  ]),
-                              margin: EdgeInsets.only(
-                                  left: 60, right: 60, top: _topMargin),
-                              width: 300,
-                              height: 50,
-                              child: Row(
-                                children: [
-                                  //button Đăng nhập
-                                  SizedBox(
-                                    width: 145,
-                                    height: double.infinity,
-                                    child: ElevatedButton(
-                                        style: ButtonStyle(
-                                          backgroundColor:
-                                              MaterialStateProperty.all<Color>(
-                                                  const Color.fromARGB(
-                                                      255, 6, 16, 38)),
-                                          overlayColor: MaterialStateProperty
-                                              .resolveWith<Color?>(
-                                            (Set<MaterialState> states) {
-                                              if (states.contains(
-                                                      MaterialState.focused) ||
-                                                  states.contains(
-                                                      MaterialState.pressed)) {
-                                                return const Color.fromARGB(
-                                                    255, 10, 56, 92);
-                                              }
-                                              return null;
-                                            },
-                                          ),
+        : MaterialApp(
+            navigatorKey: navigatorKey,
+            theme: ThemeData(
+              scaffoldBackgroundColor: Colors.black,
+            ),
+            home: Scaffold(
+              appBar: null,
+              body: GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                child: Stack(
+                  children: [
+                    //gradient background
+                    AnimatedBackground(),
+                    Center(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          //container 2 nút đăng nhập và đăng ký
+                          Container(
+                            decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 6, 16, 38),
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(_buttonRadius),
+                                  topRight: Radius.circular(_buttonRadius),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.5),
+                                    spreadRadius: 2,
+                                    blurRadius: 7,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]),
+                            margin: EdgeInsets.only(
+                                left: 60, right: 60, top: _topMargin),
+                            width: 300,
+                            height: 50,
+                            child: Row(
+                              children: [
+                                //button Đăng nhập
+                                SizedBox(
+                                  width: 145,
+                                  height: double.infinity,
+                                  child: ElevatedButton(
+                                      style: ButtonStyle(
+                                        backgroundColor:
+                                            MaterialStateProperty.all<Color>(
+                                                const Color.fromARGB(
+                                                    255, 6, 16, 38)),
+                                        overlayColor: MaterialStateProperty
+                                            .resolveWith<Color?>(
+                                          (Set<MaterialState> states) {
+                                            if (states.contains(
+                                                    MaterialState.focused) ||
+                                                states.contains(
+                                                    MaterialState.pressed)) {
+                                              return const Color.fromARGB(
+                                                  255, 10, 56, 92);
+                                            }
+                                            return null;
+                                          },
                                         ),
-                                        onPressed: func,
-                                        child: const Center(
-                                          child: Text(
-                                            'Đăng Nhập',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        )),
-                                  ),
-                                  //button đăng ký
-                                  SizedBox(
-                                    width: 146,
-                                    height: double.infinity,
-                                    child: ElevatedButton(
-                                        style: ButtonStyle(
-                                          backgroundColor:
-                                              MaterialStateProperty.all<Color>(
-                                                  Colors.white),
-                                          overlayColor: MaterialStateProperty
-                                              .resolveWith<Color?>(
-                                            (Set<MaterialState> states) {
-                                              if (states.contains(
-                                                      MaterialState.focused) ||
-                                                  states.contains(
-                                                      MaterialState.pressed)) {
-                                                return Colors.grey
-                                                    .withOpacity(0.5);
-                                              }
-                                              return null;
-                                            },
-                                          ),
+                                      ),
+                                      onPressed: func,
+                                      child: const Center(
+                                        child: Text(
+                                          'Đăng Nhập',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                        onPressed: func2,
-                                        child: const Center(
-                                          child: Text(
-                                            'Đăng Ký',
-                                            style: TextStyle(
-                                                color: Color.fromARGB(
-                                                    255, 6, 16, 38),
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        )),
-                                  ),
-                                ],
+                                      )),
+                                ),
+                                //button đăng ký
+                                SizedBox(
+                                  width: 146,
+                                  height: double.infinity,
+                                  child: ElevatedButton(
+                                      style: ButtonStyle(
+                                        backgroundColor:
+                                            MaterialStateProperty.all<Color>(
+                                                Colors.white),
+                                        overlayColor: MaterialStateProperty
+                                            .resolveWith<Color?>(
+                                          (Set<MaterialState> states) {
+                                            if (states.contains(
+                                                    MaterialState.focused) ||
+                                                states.contains(
+                                                    MaterialState.pressed)) {
+                                              return Colors.grey
+                                                  .withOpacity(0.5);
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      onPressed: func2,
+                                      child: const Center(
+                                        child: Text(
+                                          'Đăng Ký',
+                                          style: TextStyle(
+                                              color: Color.fromARGB(
+                                                  255, 6, 16, 38),
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      )),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: 300,
+                            height: 480,
+                            child: PageView(
+                              children: [
+                                LoginPage(),
+                                RegisPage(),
+                              ],
+                              controller: pageController,
+                              onPageChanged: onPageChanged,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: TextButton(
+                              onPressed: () => showDialog(
+                                  context: navigatorKey.currentContext
+                                      as BuildContext,
+                                  builder: (BuildContext context) {
+                                    return ForgetPasswordDialog();
+                                  }).then((value) {
+                                if (value != "fail" && value != null) {
+                                  print("ok");
+                                }
+                              }),
+                              child: const Text(
+                                "Quên Mật Khẩu?",
+                                style: TextStyle(
+                                    color: Colors.amber, fontSize: 17),
                               ),
                             ),
-                            SizedBox(
-                              width: 300,
-                              height: 480,
-                              child: PageView(
-                                children: [
-                                  LoginPage(),
-                                  RegisPage(),
-                                ],
-                                controller: pageController,
-                                onPageChanged: onPageChanged,
-                              ),
-                            ),
-                            //logo gmail
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: GestureDetector(
-                                onTap: () async {
-                                  await _googleSignIn.signIn();
-                                  final user = _googleSignIn.currentUser;
-                                  await createUserViaGmail(user!.email,
-                                      user.displayName, user.id, user.photoUrl);
-                                },
-                                child: Container(
-                                  width: _logoSize,
-                                  height: _logoSize,
-                                  decoration: const BoxDecoration(
-                                    image: DecorationImage(
-                                        image: AssetImage(
-                                            'assets/images/GooglePlus.png'),
-                                        fit: BoxFit.fill),
-                                  ),
+                          ),
+                          //logo gmail
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: GestureDetector(
+                              onTap: () async {
+                                await _googleSignIn.signIn();
+                                final user = _googleSignIn.currentUser;
+                                await createUserViaGmail(user!.email,
+                                    user.displayName, user.id, user.photoUrl);
+                              },
+                              child: Container(
+                                width: _logoSize,
+                                height: _logoSize,
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                      image: AssetImage(
+                                          'assets/images/GooglePlus.png'),
+                                      fit: BoxFit.fill),
                                 ),
                               ),
-                            )
-                          ],
-                        ),
+                            ),
+                          )
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            designSize: const Size(412, 732),
           );
+  }
+
+  updatePassword(BuildContext context, String email) async {
+    await auth.sendPasswordResetEmail(email: email);
+    SnackBar snackBar = const SnackBar(
+        content: Text("Đã gửi thành công! Vui lòng kiểm tra Email"));
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   void func() {

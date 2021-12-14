@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,6 +26,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   XFile? file;
   TextEditingController usernameController = TextEditingController();
   TextEditingController bioController = TextEditingController();
+
+  final auth = FirebaseAuth.instance;
 
   CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
 
@@ -94,6 +97,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ],
           );
         });
+  }
+
+  updatePassword(BuildContext context) async {
+    await auth.sendPasswordResetEmail(email: widget.user.email.toString());
+    SnackBar snackBar = const SnackBar(
+        content: Text("Đã gửi thành công! Vui lòng kiểm tra Email"));
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   updateProfle(BuildContext context) async {
@@ -188,51 +198,78 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       body: ListView(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Align(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: Stack(
-                      children: [
-                        Image(
-                          height: 100,
-                          width: 100,
-                          image: FileImage(
-                            File(file!.path),
+          SizedBox(
+            height: MediaQuery.of(context).size.height - 80,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Align(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Stack(
+                        children: [
+                          Image(
+                            height: 100,
+                            width: 100,
+                            image: FileImage(
+                              File(file!.path),
+                            ),
                           ),
-                        ),
-                        // Image.network(
-                        //   widget.user.hinhAnh.toString(),
-                        //   loadingBuilder: (context, child, loadingProgress) {
-                        //     if (loadingProgress == null) return child;
-                        //     return CircularProgress();
-                        //   },
-                        // ),
-                        Padding(
-                          padding: const EdgeInsets.all(26.0),
-                          child: IconButton(
-                              onPressed: () => selectImage(context),
-                              icon: Icon(FontAwesomeIcons.edit,
-                                  color: Colors.red[900])),
-                        )
-                      ],
+                          // Image.network(
+                          //   widget.user.hinhAnh.toString(),
+                          //   loadingBuilder: (context, child, loadingProgress) {
+                          //     if (loadingProgress == null) return child;
+                          //     return CircularProgress();
+                          //   },
+                          // ),
+                          Padding(
+                            padding: const EdgeInsets.all(26.0),
+                            child: IconButton(
+                                onPressed: () => selectImage(context),
+                                icon: Icon(FontAwesomeIcons.edit,
+                                    color: Colors.red[900])),
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: TextField(
-                  controller: usernameController,
-                  decoration: InputDecoration(
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: usernameController,
+                    decoration: InputDecoration(
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Colors.amber, width: 2.0),
+                        ),
+                        labelText: "Tên người dùng",
+                        labelStyle: const TextStyle(color: Colors.white),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Colors.amber, width: 2.0),
+                        ),
+                        border: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Colors.amber, width: 2.0),
+                        ),
+                        errorText: _displayValid
+                            ? null
+                            : "Tên người dùng quá ngắn"),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: bioController,
+                    decoration: InputDecoration(
                       focusedBorder: const OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.amber, width: 2.0),
                       ),
-                      labelText: "Tên người dùng",
+                      labelText: "Mô tả bản thân",
                       labelStyle: const TextStyle(color: Colors.white),
                       enabledBorder: const OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.amber, width: 2.0),
@@ -240,51 +277,50 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       border: const OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.amber, width: 2.0),
                       ),
-                      errorText:
-                          _displayValid ? null : "Tên người dùng quá ngắn"),
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  controller: bioController,
-                  decoration: InputDecoration(
-                    focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.amber, width: 2.0),
+                      errorText: _bioValid
+                          ? null
+                          : "phần mô tả bản thân quá dài!",
                     ),
-                    labelText: "Mô tả bản thân",
-                    labelStyle: const TextStyle(color: Colors.white),
-                    enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.amber, width: 2.0),
-                    ),
-                    border: const OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.amber, width: 2.0),
-                    ),
-                    errorText:
-                        _bioValid ? null : "phần mô tả bản thân quá dài!",
+                    style: const TextStyle(color: Colors.white),
                   ),
-                  style: const TextStyle(color: Colors.white),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(15.0),
-                child: Container(
-                  width: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.blueGrey[900],
-                  ),
-                  child: TextButton(
-                    onPressed: () => updateProfle(context),
-                    child: Text(
-                      "Cập Nhật",
-                      style: TextStyle(color: Colors.white),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Container(
+                    width: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.blueGrey[900],
+                    ),
+                    child: TextButton(
+                      onPressed: () => updateProfle(context),
+                      child: Text(
+                        "Cập Nhật",
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Expanded(child: Text("")),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Container(
+                    width: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.blueGrey[900],
+                    ),
+                    child: TextButton(
+                      onPressed: () => updatePassword(context),
+                      child: Text(
+                        "Gửi Yêu Cầu Cập Nhật Mật Khẩu",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

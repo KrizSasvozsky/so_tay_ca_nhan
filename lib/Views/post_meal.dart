@@ -34,6 +34,7 @@ class PostMeal extends StatefulWidget {
 class _PostMealState extends State<PostMeal> {
   XFile? file;
   bool isUploading = false;
+  bool isValid = false;
 
   String dropdownValue = 'Lẩu';
   double doPhoBien = 0;
@@ -85,7 +86,7 @@ class _PostMealState extends State<PostMeal> {
     });
   }
 
-  handleTakePhoto() async {
+  handleTakePhoto(BuildContext context) async {
     Navigator.pop(context);
     XFile? file = await ImagePicker()
         .pickImage(source: ImageSource.camera, maxHeight: 675, maxWidth: 960);
@@ -94,7 +95,7 @@ class _PostMealState extends State<PostMeal> {
     });
   }
 
-  handleChooseFromGallery() async {
+  handleChooseFromGallery(BuildContext context) async {
     Navigator.pop(context);
     XFile? file = await ImagePicker().pickImage(source: ImageSource.gallery);
     setState(() {
@@ -111,11 +112,11 @@ class _PostMealState extends State<PostMeal> {
             children: [
               SimpleDialogOption(
                 child: Text("Tải hình từ thư viện ảnh"),
-                onPressed: handleChooseFromGallery,
+                onPressed: () => handleChooseFromGallery(parentContext),
               ),
               SimpleDialogOption(
                 child: Text("Tải hình từ máy ảnh"),
-                onPressed: handleTakePhoto,
+                onPressed: () => handleTakePhoto(parentContext),
               ),
               SimpleDialogOption(
                 child: Text("Hủy"),
@@ -126,36 +127,49 @@ class _PostMealState extends State<PostMeal> {
         });
   }
 
+  bool checkValid() {
+    if (moTaController.text.isEmpty ||
+        tenMonAnController.text.isEmpty ||
+        cachCheBienController.text.isEmpty ||
+        listOfMaterials.isEmpty) {
+      return false;
+    }
+    return true;
+  }
+
   handleSubmit() async {
     setState(() {
       isUploading = true;
     });
 
-    try {
-      await compressImage();
-      File convertedFile = File(this.file!.path);
-      CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(convertedFile.path,
-            resourceType: CloudinaryResourceType.Image),
-      );
-      createPostInFireStore(mediaUrl: response.secureUrl);
-      moTaController.clear();
-      tenMonAnController.clear();
-      cachCheBienController.clear();
+    if (checkValid()) {
+      try {
+        await compressImage();
+        File convertedFile = File(file!.path);
+        CloudinaryResponse response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(convertedFile.path,
+              resourceType: CloudinaryResourceType.Image),
+        );
+        createPostInFireStore(mediaUrl: response.secureUrl);
+        moTaController.clear();
+        tenMonAnController.clear();
+        cachCheBienController.clear();
 
-      print(response.secureUrl);
-    } on CloudinaryException catch (e) {
-      print(e.message);
-      print(e.request);
+        print(response.secureUrl);
+      } on CloudinaryException catch (e) {
+        print(e.message);
+        print(e.request);
+      }
+      setState(() {
+        listOfMaterials.clear();
+        dropdownValue = "Lẩu";
+        doKho = 0;
+        doPhoBien = 0;
+        file = null;
+        isUploading = false;
+      });
     }
-    setState(() {
-      listOfMaterials.clear();
-      dropdownValue = "Lẩu";
-      doKho = 0;
-      doPhoBien = 0;
-      file = null;
-      isUploading = false;
-    });
+    
   }
 
   String stringFormat(List<Materials> list) {
@@ -264,30 +278,6 @@ class _PostMealState extends State<PostMeal> {
             color: Colors.white,
           ),
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CreateIngredientPage(
-                        currentUser: widget.user,
-                      ),
-                    ),
-                  ).then((value) {
-                    setState(() {
-                      if (value != "fails" && value != null) {
-                        listOfIngredientsName.add(value);
-                      }
-                    });
-                  }),
-              child: const Text(
-                "Tạo nguyên liệu",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.normal,
-                    fontSize: 18),
-              ))
-        ],
       ),
       body: Center(
         child: Container(

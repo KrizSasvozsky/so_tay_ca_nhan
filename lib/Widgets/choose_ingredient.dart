@@ -32,10 +32,8 @@ class _ChooseIngredientDialogState extends State<ChooseIngredientDialog> {
 
   filter(String keyword) {
     List<String> results = [];
-    if (keyword.isEmpty || keyword == '') {
-      setState(() {
-        searchResult = widget.listIngredientName;
-      });
+    if (keyword.isEmpty) {
+      results = widget.listIngredientName;
     } else {
       results = widget.listIngredientName
           .where((element) =>
@@ -86,9 +84,6 @@ class _ChooseIngredientDialogState extends State<ChooseIngredientDialog> {
                                 child: TextField(
                                   controller: searchController,
                                   onChanged: (value) => filter(value),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Search',
-                                  ),
                                 ),
                               ),
                             ),

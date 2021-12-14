@@ -2,28 +2,42 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:image/image.dart' as Im;
+import 'package:provider/provider.dart';
+import 'package:smooth_star_rating/smooth_star_rating.dart';
+import 'package:so_tay_mon_an/Models/ingredient.dart';
+import 'package:so_tay_mon_an/Models/material.dart';
+import 'package:so_tay_mon_an/Models/material_list.dart';
+import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/user.dart';
+import 'package:so_tay_mon_an/Widgets/choose_ingredient.dart';
+import 'package:so_tay_mon_an/Widgets/material_card.dart';
 import 'package:uuid/uuid.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 
-class CreateIngredientPage extends StatefulWidget {
-  Users currentUser;
-  CreateIngredientPage({Key? key, required this.currentUser}) : super(key: key);
+class EditIngredientPage extends StatefulWidget {
+  final Users currentUser;
+  final Ingredient ingredient;
+  const EditIngredientPage(
+      {Key? key, required this.currentUser, required this.ingredient})
+      : super(key: key);
 
   @override
-  _CreateIngredientPageState createState() => _CreateIngredientPageState();
+  _EditIngredientPageState createState() => _EditIngredientPageState();
 }
 
-class _CreateIngredientPageState extends State<CreateIngredientPage> {
+class _EditIngredientPageState extends State<EditIngredientPage> {
   XFile? file;
   bool isUploading = false;
+  bool isSelectedAnewPicture = false;
 
   String dropdownDonVi = '';
   String dropdownLoaiNguyenLieu = '';
@@ -50,29 +64,49 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
   @override
   void initState() {
     super.initState();
-    getDropdownValues();
-  }
-
-  clearImage() {
-    setState(() {
-      file = null;
+    fileFromImageUrl(widget.ingredient.hinhAnh.toString()).then((value) {
+      setState(() {
+        file = XFile(value);
+      });
     });
+
+    getDropdownValues();
+    tenNguyenLieuCtrller.text = widget.ingredient.tenNguyenLieu.toString();
+    thuongHieuCtrller.text = widget.ingredient.thuongHieu.toString();
+    cachBaoQuanCtrller.text = widget.ingredient.baoQuan.toString();
+    giaTriDinhDuongCtrller.text = widget.ingredient.giaTriDinhDuong.toString();
+    xuatXuCtrller.text = widget.ingredient.xuatXu.toString();
   }
 
-  handleTakePhoto() async {
+  Future<String> fileFromImageUrl(String url) async {
+    String imageID = const Uuid().v4();
+    final response = await http.get(Uri.parse(url));
+
+    final documentDirectory = await getApplicationDocumentsDirectory();
+
+    final file = File(join(documentDirectory.path, '$imageID.png'));
+
+    file.writeAsBytesSync(response.bodyBytes);
+
+    return file.path;
+  }
+
+  handleTakePhoto(BuildContext context) async {
     Navigator.pop(context);
     XFile? file = await ImagePicker()
         .pickImage(source: ImageSource.camera, maxHeight: 675, maxWidth: 960);
     setState(() {
       this.file = file;
+      isSelectedAnewPicture = true;
     });
   }
 
-  handleChooseFromGallery() async {
+  handleChooseFromGallery(BuildContext context) async {
     Navigator.pop(context);
     XFile? file = await ImagePicker().pickImage(source: ImageSource.gallery);
     setState(() {
       this.file = file;
+      isSelectedAnewPicture = true;
     });
   }
 
@@ -85,11 +119,11 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
             children: [
               SimpleDialogOption(
                 child: Text("Tải hình từ thư viện ảnh"),
-                onPressed: handleChooseFromGallery,
+                onPressed: () => handleChooseFromGallery(context),
               ),
               SimpleDialogOption(
                 child: Text("Tải hình từ máy ảnh"),
-                onPressed: handleTakePhoto,
+                onPressed: () => handleTakePhoto(context),
               ),
               SimpleDialogOption(
                 child: Text("Hủy"),
@@ -100,37 +134,38 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
         });
   }
 
-  createPostInFireStore({required String mediaUrl}) {
-    ingredientRef.doc(postID).set({
-      "idNguyenLieu": postID,
+  updateIngredientInFireStore({required String mediaUrl}) {
+    ingredientRef.doc(widget.ingredient.idNguyenLieu).update({
       "baoQuan": cachBaoQuanCtrller.text,
       "donVi": dropdownDonVi,
       "giaTriDinhDuong": giaTriDinhDuongCtrller.text,
       "loaiNguyenLieu": dropdownLoaiNguyenLieu,
-      "nguoiDang": widget.currentUser.id,
       "tenNguyenLieu": tenNguyenLieuCtrller.text,
       "thuongHieu": thuongHieuCtrller.text,
-      "ngayDang": DateTime.now(),
       "xuatXu": xuatXuCtrller.text,
       "hinhAnh": mediaUrl,
     });
   }
 
-  handleSubmit() async {
+  handleSubmit(BuildContext context) async {
     setState(() {
       isUploading = true;
     });
 
     try {
-      await compressImage();
-      File convertedFile = File(this.file!.path);
-      CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(convertedFile.path,
-            resourceType: CloudinaryResourceType.Image),
-      );
-      await createPostInFireStore(mediaUrl: response.secureUrl);
-      Navigator.pop(context, tenNguyenLieuCtrller.text);
-      print(response.secureUrl);
+      if (isSelectedAnewPicture) {
+        await compressImage();
+        File convertedFile = File(this.file!.path);
+        CloudinaryResponse response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(convertedFile.path,
+              resourceType: CloudinaryResourceType.Image),
+        );
+        await updateIngredientInFireStore(mediaUrl: response.secureUrl);
+      } else {
+        await updateIngredientInFireStore(
+            mediaUrl: widget.ingredient.hinhAnh.toString());
+      }
+      Navigator.pop(context);
     } on CloudinaryException catch (e) {
       print(e.message);
       print(e.request);
@@ -158,8 +193,8 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
           .forEach((f) => {listOfIngreType.add(f['tenLoaiNguyenLieu'])});
     });
     setState(() {
-      dropdownDonVi = "ml";
-      dropdownLoaiNguyenLieu = 'Thịt';
+      dropdownDonVi = widget.ingredient.donVi.toString();
+      dropdownLoaiNguyenLieu = widget.ingredient.loaiNguyenLieu.toString();
     });
   }
 
@@ -172,13 +207,13 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
           onPressed: () => Navigator.of(context).pop("fails"),
         ),
         backgroundColor: Colors.blueGrey[900],
-        title: const Text('Tạo Nguyên Liệu'),
+        title: const Text('Cập Nhật Nguyên Liệu'),
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: handleSubmit,
+            onPressed: () => handleSubmit(context),
             child: const Text(
-              "Đăng Tải",
+              "Cập Nhật",
               style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

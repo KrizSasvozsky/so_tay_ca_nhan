@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:so_tay_mon_an/Models/ingredient.dart';
 import 'package:so_tay_mon_an/Models/meal_type.dart';
 import 'package:provider/provider.dart';
 import 'package:so_tay_mon_an/Models/meal_type_string.dart';
@@ -17,11 +18,11 @@ class _MainHorizontalListViewState extends State<MainHorizontalListView> {
   @override
   Widget build(BuildContext context) {
     Stream<QuerySnapshot<Map<String, dynamic>>> _selectedStream =
-        FirebaseFirestore.instance.collection('meal_type').snapshots();
+        FirebaseFirestore.instance.collection('Ingredients_Type').snapshots();
     final data = Provider.of<MealTypeString>(context);
-    MealType _mealType = MealType("id", "hinhAnh", "tenLoaiMonAn");
+    Ingredient _ingredient = Ingredient();
     return Container(
-      margin: const EdgeInsets.fromLTRB(13, 88, 0, 0),
+      margin: const EdgeInsets.fromLTRB(15, 15, 0, 0),
       height: 78,
       decoration: const BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(6))),
@@ -38,36 +39,36 @@ class _MainHorizontalListViewState extends State<MainHorizontalListView> {
               scrollDirection: Axis.horizontal,
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
-                DocumentSnapshot mealType = snapshot.data!.docs[index];
-                String hinhAnh = mealType['hinhAnh'];
+                DocumentSnapshot ingre = snapshot.data!.docs[index];
                 return Row(
                   children: [
-                    Container(
-                      width: 62,
-                      height: 78,
-                      decoration: BoxDecoration(
-                          color: _selectedIndex == index
-                              ? Colors.amber
-                              : Colors.white,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(6))),
-                      child: Column(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedIndex = index;
-                                _mealType = MealType(
-                                    mealType['id'],
-                                    mealType['hinhAnh'],
-                                    mealType['tenLoaiMonAn']);
-                                data.changeData(mealType['tenLoaiMonAn']);
-                              });
-                            },
-                            icon: Image.asset('assets/images/$hinhAnh'),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedIndex = index;
+                          data.changeData(ingre['tenLoaiNguyenLieu']);
+                        });
+                      },
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                            color: _selectedIndex == index
+                                ? Colors.amber
+                                : Colors.white,
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(6))),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              ingre['tenLoaiNguyenLieu'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                          Text(mealType['tenLoaiMonAn']),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(

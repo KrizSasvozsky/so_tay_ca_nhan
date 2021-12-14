@@ -16,6 +16,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   TextEditingController searchResultcontroller = TextEditingController();
+
   final userRef = FirebaseFirestore.instance.collection('Users');
   late Future<QuerySnapshot> searchResultFuture =
       userRef.where("username", isGreaterThanOrEqualTo: "").get();
@@ -27,6 +28,42 @@ class _SearchPageState extends State<SearchPage> {
       searchResultFuture = users;
     });
   }
+
+  // Widget searchResultsWidget(String name) {
+  //   return StreamBuilder(
+  //       stream: FirebaseFirestore.instance
+  //           .collection('Users')
+  //           .where('username', isEqualTo: name)
+  //           .snapshots(),
+  //       builder: (context,
+  //           AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
+  //         if (!snapshot.hasData) {
+  //           return const CircularProgressIndicator();
+  //         }
+  //         List<UserResult> seachResults = [];
+  //         snapshot.data!.docs.forEach((doc) {
+  //           if (doc['id'] == widget.user.id) {
+  //             print(true);
+  //           } else {
+  //             Users user = Users(
+  //                 email: doc['email'],
+  //                 bio: doc['bio'],
+  //                 hinhAnh: doc['hinhAnh'],
+  //                 id: doc['id'],
+  //                 quyenHan: doc['quyenHan'],
+  //                 username: doc['username']);
+  //             UserResult searchResult = UserResult(
+  //               user: user,
+  //               currentUser: widget.user,
+  //             );
+  //             seachResults.add(searchResult);
+  //           }
+  //         });
+  //         return ListView(
+  //           children: seachResults,
+  //         );
+  //       });
+  // }
 
   Widget searchResultsWidget() {
     return FutureBuilder(
@@ -42,7 +79,7 @@ class _SearchPageState extends State<SearchPage> {
             } else {
               Users user = Users(
                   email: doc['email'],
-                  bio: doc['bio'], 
+                  bio: doc['bio'],
                   hinhAnh: doc['hinhAnh'],
                   id: doc['id'],
                   quyenHan: doc['quyenHan'],
