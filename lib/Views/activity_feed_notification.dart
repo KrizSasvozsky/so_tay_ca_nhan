@@ -45,7 +45,7 @@ class _ActivityFeedNotiFyPageState extends State<ActivityFeedNotiFyPage> {
     Provider.of<FeedList>(context).addFeed(feedItems);
     return Scaffold(
       appBar: AppBar(
-        title: Text("Activity Feed"),
+        title: Text("Thông Báo"),
         centerTitle: true,
         backgroundColor: Colors.blueGrey[900],
       ),

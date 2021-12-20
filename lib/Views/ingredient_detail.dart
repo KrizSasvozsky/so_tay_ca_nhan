@@ -165,6 +165,8 @@ class _IngreDetailPageState extends State<IngreDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Chi Tiết nguyên liệu"),
+        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.chevron_left),
           onPressed: () => Navigator.pop(context),

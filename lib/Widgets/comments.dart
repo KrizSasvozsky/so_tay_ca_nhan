@@ -214,28 +214,34 @@ class _CommentPageState extends State<CommentPage> {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         appBar: AppBar(
+          title: const Text("Bình luận"),
           backgroundColor: Colors.blueGrey[900],
+          centerTitle: true,
         ),
-        body: ListView(
+        body: Column(
           children: [
-            Container(
-              width: double.infinity,
-              height: 535,
-              child: buildComments(),
-            ),
-            ListTile(
-              title: TextFormField(
-                controller: commentController,
-                decoration: InputDecoration(
-                  labelText: "Hãy nhập bình luận",
-                  labelStyle: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
-                style: TextStyle(color: Colors.white),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                child: buildComments(),
               ),
-              trailing:
-                  TextButton(onPressed: addComment, child: Text("Đăng tải")),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: ListTile(
+                title: TextFormField(
+                  controller: commentController,
+                  decoration: const InputDecoration(
+                    labelText: "Hãy nhập bình luận",
+                    labelStyle: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: TextStyle(color: Colors.white),
+                ),
+                trailing: TextButton(
+                    onPressed: addComment, child: const Text("Đăng tải")),
+              ),
             ),
           ],
         ),
