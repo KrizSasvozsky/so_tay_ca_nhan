@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/src/provider.dart';
+import 'package:so_tay_mon_an/MenuController.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Views/chat_page.dart';
+import 'package:so_tay_mon_an/Views/dashboard_screen.dart';
 import 'package:so_tay_mon_an/Widgets/profile_meal_listview.dart';
 
 class TimeLinePage extends StatefulWidget {
@@ -90,6 +93,7 @@ class _TimeLinePageState extends State<TimeLinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: context.read<MenuController>().scaffoldKey,
       appBar: AppBar(
         backgroundColor: Colors.blueGrey[900],
         actions: [
@@ -104,6 +108,17 @@ class _TimeLinePageState extends State<TimeLinePage> {
             ),
             icon: Icon(Icons.access_alarm),
           ),
+          widget.currentUser.quyenHan!
+              ? IconButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DashboardScreen(),
+                    ),
+                  ),
+                  icon: Icon(Icons.access_alarm),
+                )
+              : Container(),
         ],
         title: Text("Timeline"),
         centerTitle: true,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
+import 'package:so_tay_mon_an/MenuController.dart';
 import 'package:so_tay_mon_an/Models/feed_list.dart';
 import 'package:so_tay_mon_an/Models/material_list.dart';
 import 'package:so_tay_mon_an/Models/meal_list_notifi.dart';
@@ -103,8 +104,15 @@ class _MainPageState extends State<MainPage> {
                   ),
             PageView(
               children: [
-                ChangeNotifierProvider(
-                  create: (context) => MealList([]),
+                MultiProvider(
+                  providers: [
+                    ChangeNotifierProvider(
+                      create: (context) => MealList([]),
+                    ),
+                    ChangeNotifierProvider(
+                      create: (context) => MenuController(),
+                    ),
+                  ],
                   child: TimeLinePage(
                     currentUser: user,
                   ),
