@@ -6,9 +6,11 @@ import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:image/image.dart' as Im;
 import 'package:uuid/uuid.dart';
@@ -24,12 +26,13 @@ class CreateIngredientPage extends StatefulWidget {
 class _CreateIngredientPageState extends State<CreateIngredientPage> {
   XFile? file;
   bool isUploading = false;
+  bool isSelectImage = false;
 
   String dropdownDonVi = '';
   String dropdownLoaiNguyenLieu = '';
 
   List<String> listOfUnits = [];
-  List<String> listOfIngreType = [];
+  List<IngredientType> listOfIngreType = [];
 
   CollectionReference unitsRef = FirebaseFirestore.instance.collection('Units');
   CollectionReference ingredientTypeRef =
@@ -57,6 +60,18 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
     setState(() {
       file = null;
     });
+  }
+
+  Future<String> getIdFromIngredientTypeName(String ingredientTypeName) async {
+    String id = '';
+    List<IngredientType> listOfIngre = [];
+    QuerySnapshot snapshot = await ingredientTypeRef
+        .where('tenLoaiNguyenLieu', isEqualTo: ingredientTypeName)
+        .get();
+    listOfIngre +=
+        snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
+    id = listOfIngre.first.idLoaiNguyenLieu;
+    return id;
   }
 
   handleTakePhoto() async {
@@ -100,13 +115,14 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
         });
   }
 
-  createPostInFireStore({required String mediaUrl}) {
+  createPostInFireStore(
+      {required String mediaUrl, required String idLoaiNguyenLieu}) {
     ingredientRef.doc(postID).set({
       "idNguyenLieu": postID,
       "baoQuan": cachBaoQuanCtrller.text,
       "donVi": dropdownDonVi,
       "giaTriDinhDuong": giaTriDinhDuongCtrller.text,
-      "loaiNguyenLieu": dropdownLoaiNguyenLieu,
+      "loaiNguyenLieu": idLoaiNguyenLieu,
       "nguoiDang": widget.currentUser.id,
       "tenNguyenLieu": tenNguyenLieuCtrller.text,
       "thuongHieu": thuongHieuCtrller.text,
@@ -121,20 +137,47 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
       isUploading = true;
     });
 
-    try {
-      await compressImage();
-      File convertedFile = File(this.file!.path);
-      CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(convertedFile.path,
-            resourceType: CloudinaryResourceType.Image),
-      );
-      await createPostInFireStore(mediaUrl: response.secureUrl);
-      Navigator.pop(context, tenNguyenLieuCtrller.text);
-      print(response.secureUrl);
-    } on CloudinaryException catch (e) {
-      print(e.message);
-      print(e.request);
+    if (checkValid()) {
+      try {
+        await compressImage();
+        File convertedFile = File(this.file!.path);
+        CloudinaryResponse response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(convertedFile.path,
+              resourceType: CloudinaryResourceType.Image),
+        );
+        String idLoaiNguyenLieu =
+            await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
+        await createPostInFireStore(
+            mediaUrl: response.secureUrl, idLoaiNguyenLieu: idLoaiNguyenLieu);
+        Navigator.pop(context, tenNguyenLieuCtrller.text);
+        print(response.secureUrl);
+      } on CloudinaryException catch (e) {
+        print(e.message);
+        print(e.request);
+      }
     }
+  }
+
+  checkValid() {
+    if (!isSelectImage) {
+      Fluttertoast.showToast(
+          msg: "Vui lòng chọn hình ảnh!",
+          backgroundColor: Colors.white,
+          textColor: Colors.black);
+    }
+    if (tenNguyenLieuCtrller.text.trim().isEmpty ||
+        thuongHieuCtrller.text.trim().isEmpty ||
+        cachBaoQuanCtrller.text.trim().isEmpty ||
+        giaTriDinhDuongCtrller.text.trim().isEmpty ||
+        xuatXuCtrller.text.trim().isEmpty) {
+      Fluttertoast.showToast(
+          msg: "Vui lòng điền đủ thông tin!",
+          backgroundColor: Colors.white,
+          textColor: Colors.black);
+      return false;
+    }
+
+    return true;
   }
 
   compressImage() async {
@@ -153,13 +196,14 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
     await unitsRef.get().then((QuerySnapshot snapshotvalue) {
       snapshotvalue.docs.forEach((f) => {listOfUnits.add(f['tenDonVi'])});
     });
-    await ingredientTypeRef.get().then((QuerySnapshot snapshotvalue) {
-      snapshotvalue.docs
-          .forEach((f) => {listOfIngreType.add(f['tenLoaiNguyenLieu'])});
+    QuerySnapshot snapshot = await ingredientTypeRef.get();
+    setState(() {
+      listOfIngreType +=
+          snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
     });
     setState(() {
-      dropdownDonVi = "ml";
-      dropdownLoaiNguyenLieu = 'Thịt';
+      dropdownDonVi = listOfUnits.first;
+      dropdownLoaiNguyenLieu = listOfIngreType.first.tenLoaiNguyenLieu;
     });
   }
 
@@ -294,11 +338,11 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
                       });
                     },
                     items: listOfIngreType
-                        .map<DropdownMenuItem<String>>((String value) {
+                        .map<DropdownMenuItem<String>>((IngredientType value) {
                       return DropdownMenuItem<String>(
-                        value: value,
+                        value: value.tenLoaiNguyenLieu,
                         child: Text(
-                          value,
+                          value.tenLoaiNguyenLieu,
                         ),
                       );
                     }).toList(),

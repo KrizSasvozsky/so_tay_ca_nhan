@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ForgetPasswordDialog extends StatefulWidget {
   ForgetPasswordDialog({Key? key}) : super(key: key);
@@ -9,7 +10,6 @@ class ForgetPasswordDialog extends StatefulWidget {
 
 class _ForgetPasswordDialogState extends State<ForgetPasswordDialog> {
   TextEditingController textEditingController = TextEditingController();
-  bool isValid = false;
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -48,7 +48,11 @@ class _ForgetPasswordDialogState extends State<ForgetPasswordDialog> {
                 Expanded(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.of(context).pop("ok");
+                      if (textEditingController.text.trim().isEmpty) {
+                        Fluttertoast.showToast(msg: "Vui lập nhập email!");
+                      } else {
+                        Navigator.of(context).pop(textEditingController.text);
+                      }
                     },
                     child: Text(
                       'Gửi!',

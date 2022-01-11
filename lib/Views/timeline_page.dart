@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/src/provider.dart';
 import 'package:so_tay_mon_an/MenuController.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
@@ -93,30 +94,36 @@ class _TimeLinePageState extends State<TimeLinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: context.read<MenuController>().scaffoldKey,
       appBar: AppBar(
         backgroundColor: Colors.blueGrey[900],
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatPage(
-                  currentUser: widget.currentUser,
-                ),
-              ),
-            ),
-            icon: Icon(Icons.access_alarm),
+            onPressed: () {
+              if (!widget.currentUser.banned!) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ChatPage(
+                            currentUser: widget.currentUser,
+                          )),
+                );
+              } else {
+                Fluttertoast.showToast(msg: "Bạn đã bị cấm bởi admin");
+              }
+            },
+            icon: const Icon(Icons.chat_bubble),
           ),
           widget.currentUser.quyenHan!
               ? IconButton(
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DashboardScreen(),
+                      builder: (context) => DashboardScreen(
+                        currentUser: widget.currentUser,
+                      ),
                     ),
                   ),
-                  icon: Icon(Icons.access_alarm),
+                  icon: Icon(Icons.admin_panel_settings_sharp),
                 )
               : Container(),
         ],

@@ -59,6 +59,7 @@ class _MainPageState extends State<MainPage> {
           hinhAnh: value['hinhAnh'],
           quyenHan: value['quyenHan'],
           username: value['username'],
+          banned: value['banned'],
         );
       });
     });
@@ -113,7 +114,7 @@ class _MainPageState extends State<MainPage> {
                       create: (context) => MenuController(),
                     ),
                   ],
-                  child: TimeLinePage(
+                  builder: (context, child) => TimeLinePage(
                     currentUser: user,
                   ),
                 ),
@@ -138,6 +139,7 @@ class _MainPageState extends State<MainPage> {
                     profileUser: user,
                     currentUser: user,
                     fromSearchPage: false,
+                    isAdmin: false,
                   ),
                 ),
               ],

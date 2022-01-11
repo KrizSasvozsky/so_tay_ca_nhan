@@ -6,8 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
+import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Widgets/comments.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -31,13 +33,48 @@ class _IngreDetailPageState extends State<IngreDetailPage> {
   bool isLiked = false;
   String thanhPhan = '';
 
+  List<IngredientType> listOfIngreType = [];
+  List<Unit> listOfUnit = [];
+
+  CollectionReference ingredientTypeRef =
+      FirebaseFirestore.instance.collection('Ingredients_Type');
+  CollectionReference unitRef = FirebaseFirestore.instance.collection('Units');
+
   @override
   void initState() {
     generateUser(widget.ingredient.nguoiDang.toString());
     setState(() {
       date = widget.ingredient.ngayDang!.toDate();
     });
+    getlist();
     super.initState();
+  }
+
+  getlist() async {
+    QuerySnapshot snapshot = await ingredientTypeRef.get();
+    QuerySnapshot unitSnapshot = await unitRef.get();
+    setState(() {
+      listOfIngreType +=
+          snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
+      listOfUnit += unitSnapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    });
+  }
+
+  getNameFromIngredientTypeId(String id) {
+    String result = '';
+    for (IngredientType ingredientType in listOfIngreType) {
+      if (ingredientType.idLoaiNguyenLieu.compareTo(id) == 0)
+        result = ingredientType.tenLoaiNguyenLieu;
+    }
+    return result;
+  }
+
+  getNameFromUnitId(String id) {
+    String result = '';
+    for (Unit unit in listOfUnit) {
+      if (unit.id.compareTo(id) == 0) result = unit.tenDonVi;
+    }
+    return result;
   }
 
   generateUser(String id) async {
@@ -50,7 +87,8 @@ class _IngreDetailPageState extends State<IngreDetailPage> {
             email: value['email'],
             hinhAnh: value['hinhAnh'],
             quyenHan: value['quyenHan'],
-            username: value['username']);
+            username: value['username'],
+            banned: value['banned']);
       });
     });
   }
@@ -65,17 +103,25 @@ class _IngreDetailPageState extends State<IngreDetailPage> {
         backgroundColor: Colors.grey,
       ),
       title: GestureDetector(
-        child: Text(
-          user.username.toString(),
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: !user.banned!
+            ? Text(
+                user.username.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : const Text(
+                "Người dùng đã bị cấm!",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
       subtitle: Text(
         timeago.format(date, locale: 'vn'),
-        style: TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white),
       ),
     );
   }
@@ -121,14 +167,16 @@ class _IngreDetailPageState extends State<IngreDetailPage> {
                 padding: const EdgeInsets.only(top: 10.0, left: 10.0),
                 child: Text(
                   "Loại nguyên liệu: " +
-                      widget.ingredient.loaiNguyenLieu.toString(),
+                      getNameFromIngredientTypeId(
+                          widget.ingredient.loaiNguyenLieu.toString()),
                   style: TextStyle(color: Colors.white),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 10.0, left: 10.0),
                 child: Text(
-                  "Đơn vị: " + widget.ingredient.donVi.toString(),
+                  "Đơn vị: " +
+                      getNameFromUnitId(widget.ingredient.donVi.toString()),
                   style: TextStyle(color: Colors.white),
                 ),
               ),

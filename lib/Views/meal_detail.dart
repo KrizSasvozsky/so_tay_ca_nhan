@@ -8,6 +8,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/meal_type.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Widgets/comments.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -29,8 +31,22 @@ class _MealDetailPageState extends State<MealDetailPage> {
       FirebaseFirestore.instance.collection('Material');
   CollectionReference ingredientRef =
       FirebaseFirestore.instance.collection('Ingredients');
+  CollectionReference mealTypeRef =
+      FirebaseFirestore.instance.collection('meal_type');
+  CollectionReference unitRef = FirebaseFirestore.instance.collection('Units');
+
+  List<MealType> listOfMealType = [];
+  List<Unit> listOfUnit = [];
+
   DateTime date = DateTime.now();
-  late Users user;
+  Users user = Users(
+      banned: false,
+      bio: "loading",
+      email: "loading",
+      hinhAnh: "loading",
+      id: "loading",
+      quyenHan: false,
+      username: "loading");
   int soLuotThich = 0;
   bool isLiked = false;
   bool showHeart = false;
@@ -46,6 +62,32 @@ class _MealDetailPageState extends State<MealDetailPage> {
     super.initState();
   }
 
+  getlist() async {
+    QuerySnapshot mealTypeSnapshot = await mealTypeRef.get();
+    QuerySnapshot unitSnapshot = await unitRef.get();
+    setState(() {
+      listOfMealType +=
+          mealTypeSnapshot.docs.map((e) => MealType.fromDocument(e)).toList();
+      listOfUnit += unitSnapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    });
+  }
+
+  getNameFromMealTypeId(String id) {
+    String result = '';
+    for (MealType mealType in listOfMealType) {
+      if (mealType.id.compareTo(id) == 0) result = mealType.tenLoaiMonAn;
+    }
+    return result;
+  }
+
+  getNameFromUnitId(String id) {
+    String result = '';
+    for (Unit unit in listOfUnit) {
+      if (unit.id.compareTo(id) == 0) result = unit.tenDonVi;
+    }
+    return result;
+  }
+
   generateUser(String id) async {
     var document = FirebaseFirestore.instance.collection('Users').doc(id);
     await document.get().then((value) {
@@ -56,7 +98,8 @@ class _MealDetailPageState extends State<MealDetailPage> {
             email: value['email'],
             hinhAnh: value['hinhAnh'],
             quyenHan: value['quyenHan'],
-            username: value['username']);
+            username: value['username'],
+            banned: value['banned']);
       });
     });
   }
@@ -105,13 +148,21 @@ class _MealDetailPageState extends State<MealDetailPage> {
         backgroundColor: Colors.grey,
       ),
       title: GestureDetector(
-        child: Text(
-          user.username.toString(),
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child: !user.banned!
+            ? Text(
+                user.username.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : const Text(
+                "Người dùng đã bị cấm!",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
       subtitle: Text(
         timeago.format(date, locale: 'vn'),
@@ -145,7 +196,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
           result += "- " +
               materials.soLuong.toString() +
               " " +
-              ingredient.donVi.toString() +
+              getNameFromUnitId(ingredient.donVi.toString()) +
               " " +
               ingredient.tenNguyenLieu.toString() +
               "\n";
@@ -249,7 +300,8 @@ class _MealDetailPageState extends State<MealDetailPage> {
               Padding(
                 padding: const EdgeInsets.only(top: 10.0, left: 10.0),
                 child: Text(
-                  "Loại món ăn: " + widget.meal.loaiMonAn.toString(),
+                  "Loại món ăn: " +
+                      getNameFromMealTypeId(widget.meal.loaiMonAn.toString()),
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -301,6 +353,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    getlist();
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(

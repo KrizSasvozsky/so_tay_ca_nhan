@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:so_tay_mon_an/Models/meal_type_string.dart';
@@ -21,23 +22,27 @@ class _IngredientPageState extends State<IngredientPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blueGrey[900],
-        title: Text("Nguyên Liệu"),
+        title: const Text("Nguyên Liệu"),
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreateIngredientPage(
-                  currentUser: widget.user,
-                ),
-              ),
-            ),
-            icon: Icon(FontAwesomeIcons.plusCircle),
+            onPressed: () {
+              !widget.user.banned!
+                  ? Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateIngredientPage(
+                          currentUser: widget.user,
+                        ),
+                      ),
+                    )
+                  : Fluttertoast.showToast(msg: "Bạn đã bị cấm bởi admin");
+            },
+            icon: const Icon(FontAwesomeIcons.plusCircle),
           ),
         ],
       ),
       body: ChangeNotifierProvider(
-        create: (context) => MealTypeString("Rau Củ"),
+        create: (context) => MealTypeString("3kFIdPISzQuzpwJ98F3x"),
         child: Column(
           children: [
             MainHorizontalListView(),

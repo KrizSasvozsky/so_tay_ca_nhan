@@ -95,7 +95,7 @@ class _EditMealPageState extends State<EditMealPage> {
 
   getMaterials() async {
     List<String> listOfId = [];
-    String result = '';
+    String result = ''; 
     widget.meal.thanhPhan.keys.forEach((val) {
       listOfId.add(val);
     });

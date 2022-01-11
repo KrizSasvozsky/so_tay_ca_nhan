@@ -83,10 +83,13 @@ class _SearchPageState extends State<SearchPage> {
                   hinhAnh: doc['hinhAnh'],
                   id: doc['id'],
                   quyenHan: doc['quyenHan'],
-                  username: doc['username']);
+                  username: doc['username'],
+                  banned: doc['banned']);
+
               UserResult searchResult = UserResult(
                 user: user,
                 currentUser: widget.user,
+                isAdmin: false,
               );
               seachResults.add(searchResult);
             }

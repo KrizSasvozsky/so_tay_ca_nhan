@@ -153,7 +153,7 @@ class _CommentPageState extends State<CommentPage> {
                       ),
                       title: Text(
                         comments.elementAt(index).username,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +44,14 @@ class _ProfileMealListviewState extends State<ProfileMealListview> {
   CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
 
   DateTime date = DateTime.now();
-  Users profileUser = Users();
+  Users profileUser = Users(
+      bio: "loading",
+      email: "loading",
+      hinhAnh: "",
+      quyenHan: false,
+      id: "loading",
+      username: "loading",
+      banned: true);
   int soLuotThich = 0;
   bool isLiked = false;
   bool showHeart = false;
@@ -180,13 +188,21 @@ class _ProfileMealListviewState extends State<ProfileMealListview> {
               backgroundColor: Colors.grey,
             ),
             title: GestureDetector(
-              child: Text(
-                profileUser.username.toString(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: !profileUser.banned!
+                  ? Text(
+                      profileUser.username.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : const Text(
+                      "Người dùng đã bị cấm",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
             subtitle: Text(
               timeago.format(date, locale: 'vn'),
@@ -282,7 +298,13 @@ class _ProfileMealListviewState extends State<ProfileMealListview> {
                 checkLike();
               },
             ),
-            onDoubleTap: handleLikeMeal,
+            onDoubleTap: () {
+              if (!widget.currentUser.banned!) {
+                handleLikeMeal;
+              } else {
+                Fluttertoast.showToast(msg: "Bạn đã bị cấm bởi admin");
+              }
+            },
             child: Stack(
               children: [
                 Container(
@@ -319,16 +341,29 @@ class _ProfileMealListviewState extends State<ProfileMealListview> {
           Row(
             children: [
               IconButton(
-                onPressed: handleLikeMeal,
+                onPressed: () {
+                  if (!widget.currentUser.banned!) {
+                    handleLikeMeal;
+                  } else {
+                    Fluttertoast.showToast(msg: "Bạn đã bị cấm bởi admin");
+                  }
+                },
                 icon: Icon(
                   isLiked ? Icons.favorite : Icons.favorite_border,
                   color: Colors.red,
                 ),
               ),
               IconButton(
-                onPressed: () => showComments(context,
-                    postId: widget.meal.id, nguoiDang: widget.meal.nguoiDang),
-                icon: Icon(
+                onPressed: () {
+                  if (!widget.currentUser.banned!) {
+                    showComments(context,
+                        postId: widget.meal.id,
+                        nguoiDang: widget.meal.nguoiDang);
+                  } else {
+                    Fluttertoast.showToast(msg: "Bạn đã bị cấm bởi admin");
+                  }
+                },
+                icon: const Icon(
                   FontAwesomeIcons.solidComments,
                   color: Colors.amber,
                 ),

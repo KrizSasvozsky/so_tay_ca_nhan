@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:so_tay_mon_an/Services/flutter_firebase.dart';
 import 'package:so_tay_mon_an/Widgets/animated_background.dart';
@@ -144,6 +145,7 @@ class _MyApp extends State<MyApp> {
         ? MaterialApp(
             theme: ThemeData(
               scaffoldBackgroundColor: Colors.black,
+              canvasColor: Colors.redAccent,
             ),
             home: MainPage(
               user: user,
@@ -281,9 +283,18 @@ class _MyApp extends State<MyApp> {
                                       as BuildContext,
                                   builder: (BuildContext context) {
                                     return ForgetPasswordDialog();
-                                  }).then((value) {
+                                  }).then((value) async {
                                 if (value != "fail" && value != null) {
-                                  print("ok");
+                                  try {
+                                    await auth.sendPasswordResetEmail(
+                                        email: value);
+                                    Fluttertoast.showToast(
+                                        msg:
+                                            "Yêu cầu thành công, vui lòng kiểm tra email!");
+                                  } on FirebaseAuthException catch (_) {
+                                    Fluttertoast.showToast(
+                                        msg: "Email không hợp lệ!");
+                                  }
                                 }
                               }),
                               child: const Text(

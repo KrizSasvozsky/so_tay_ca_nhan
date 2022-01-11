@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
@@ -21,11 +22,13 @@ class ProfilePage extends StatefulWidget {
   Users profileUser;
   Users currentUser;
   bool fromSearchPage;
+  bool isAdmin;
   ProfilePage(
       {Key? key,
       required this.profileUser,
       required this.fromSearchPage,
-      required this.currentUser})
+      required this.currentUser,
+      required this.isAdmin})
       : super(key: key);
 
   @override
@@ -40,6 +43,7 @@ class _ProfilePageState extends State<ProfilePage> {
       FirebaseFirestore.instance.collection('following');
   CollectionReference activityFeedRef =
       FirebaseFirestore.instance.collection('feed');
+  CollectionReference userRef = FirebaseFirestore.instance.collection('Users');
   List<Meal> meals = [];
   int _selectedTab = 0;
   bool isFollowing = false;
@@ -120,72 +124,147 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   handleUnfollowUser() {
-    setState(() {
-      isFollowing = false;
-    });
-    followerRef
-        .doc(widget.profileUser.id)
-        .collection('userFollowers')
-        .doc(widget.currentUser.id)
-        .get()
-        .then((value) {
-      if (value.exists) {
-        value.reference.delete();
-      }
-    });
-    followingRef
-        .doc(widget.currentUser.id)
-        .collection('userFollowing')
-        .doc(widget.profileUser.id)
-        .get()
-        .then((value) {
-      if (value.exists) {
-        value.reference.delete();
-      }
-    });
-    activityFeedRef
-        .doc(widget.profileUser.id)
-        .collection('feedItems')
-        .doc(widget.currentUser.id)
-        .get()
-        .then((value) {
-      if (value.exists) {
-        value.reference.delete();
-      }
-    });
-    getFollowers();
+    if (!widget.currentUser.banned!) {
+      setState(() {
+        isFollowing = false;
+      });
+      followerRef
+          .doc(widget.profileUser.id)
+          .collection('userFollowers')
+          .doc(widget.currentUser.id)
+          .get()
+          .then((value) {
+        if (value.exists) {
+          value.reference.delete();
+        }
+      });
+      followingRef
+          .doc(widget.currentUser.id)
+          .collection('userFollowing')
+          .doc(widget.profileUser.id)
+          .get()
+          .then((value) {
+        if (value.exists) {
+          value.reference.delete();
+        }
+      });
+      activityFeedRef
+          .doc(widget.profileUser.id)
+          .collection('feedItems')
+          .doc(widget.currentUser.id)
+          .get()
+          .then((value) {
+        if (value.exists) {
+          value.reference.delete();
+        }
+      });
+      getFollowers();
+    } else {
+      Fluttertoast.showToast(
+          msg: "Bạn đã bị cấm bởi admin.",
+          backgroundColor: Colors.white,
+          textColor: Colors.black);
+    }
   }
 
   handleFollowUser() {
+    if (!widget.currentUser.banned!) {
+      setState(() {
+        isFollowing = true;
+      });
+      followerRef
+          .doc(widget.profileUser.id)
+          .collection('userFollowers')
+          .doc(widget.currentUser.id)
+          .set({'id': widget.currentUser.id});
+      followingRef
+          .doc(widget.currentUser.id)
+          .collection('userFollowing')
+          .doc(widget.profileUser.id)
+          .set({'id': widget.profileUser.id});
+      activityFeedRef
+          .doc(widget.profileUser.id)
+          .collection('feedItems')
+          .doc(widget.currentUser.id)
+          .set({
+        "loaiFeed": "follow",
+        "noiDungComment": "",
+        "username": widget.currentUser.username,
+        "idNguoiDung": widget.currentUser.id,
+        "hinhAnhNguoiDung": widget.currentUser.hinhAnh,
+        "postId": "",
+        "feedId": widget.currentUser.id,
+        "hinhAnhPost": "",
+        "thoiGianDang": DateTime.now(),
+      });
+      getFollowers();
+    } else {
+      Fluttertoast.showToast(
+          msg: "Bạn đã bị cấm bởi admin.",
+          backgroundColor: Colors.white,
+          textColor: Colors.black);
+    }
+  }
+
+  updateUserPermission(bool result) async {
+    await userRef.doc(widget.profileUser.id).update({'quyenHan': result});
     setState(() {
-      isFollowing = true;
+      widget.profileUser.quyenHan = result;
     });
-    followerRef
-        .doc(widget.profileUser.id)
-        .collection('userFollowers')
-        .doc(widget.currentUser.id)
-        .set({'id': widget.currentUser.id});
-    followingRef
-        .doc(widget.currentUser.id)
-        .collection('userFollowing')
-        .doc(widget.profileUser.id)
-        .set({'id': widget.profileUser.id});
-    activityFeedRef
-        .doc(widget.profileUser.id)
-        .collection('feedItems')
-        .doc(widget.currentUser.id)
-        .set({
-      "loaiFeed": "follow",
-      "noiDungComment": "",
-      "username": widget.currentUser.username,
-      "idNguoiDung": widget.currentUser.id,
-      "hinhAnhNguoiDung": widget.currentUser.hinhAnh,
-      "postId": "",
-      "feedId": widget.currentUser.id,
-      "hinhAnhPost": "",
-      "thoiGianDang": DateTime.now(),
-    });
-    getFollowers();
+  }
+
+  Widget adminPermision(isAdmin) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: Container(
+        height: 250.0,
+        width: 300.0,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            isAdmin
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                        "Bạn có chắc muốn hủy quyền Admin của user này?"),
+                  )
+                : const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                        "Bạn có chắc muốn trao quyền Admin cho user này?"),
+                  ),
+            const Padding(padding: EdgeInsets.only(top: 50.0)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop("fail");
+                    },
+                    child: const Text(
+                      'Hủy!',
+                      style: TextStyle(color: Colors.red, fontSize: 18.0),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop("ok");
+                    },
+                    child: const Text(
+                      'Đồng ý!',
+                      style: TextStyle(color: Colors.blue, fontSize: 18.0),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -195,6 +274,24 @@ class _ProfilePageState extends State<ProfilePage> {
         ? Scaffold(
             appBar: AppBar(
               backgroundColor: Colors.blueGrey[900],
+              actions: [
+                widget.isAdmin && widget.currentUser.id != widget.profileUser.id
+                    ? IconButton(
+                        onPressed: () => showDialog(
+                                    context: context,
+                                    builder: (context) => adminPermision(
+                                        widget.profileUser.quyenHan!))
+                                .then((value) {
+                              if (value == "ok") {
+                                updateUserPermission(
+                                    !widget.profileUser.quyenHan!);
+                              }
+                            }),
+                        icon: widget.profileUser.quyenHan!
+                            ? Icon(Icons.cancel)
+                            : Icon(Icons.check_sharp))
+                    : Container()
+              ],
             ),
             body: SingleChildScrollView(
               child: contentProfileWidget(MediaQuery.of(context).size.height,
@@ -236,20 +333,36 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                widget.profileUser.username.toString(),
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                widget.profileUser.bio.toString(),
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                ),
-                              ),
+                              !widget.profileUser.banned!
+                                  ? Text(
+                                      widget.profileUser.username.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Người dùng đã bị cấm!",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                              !widget.profileUser.banned!
+                                  ? Text(
+                                      widget.profileUser.bio.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Người dùng đã bị cấm!",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
                             ],
                           ),
                         ),
@@ -312,7 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
               //Edit profile
               widget.fromSearchPage
                   ? Container(
-                      padding: EdgeInsets.only(top: 95, left: 260),
+                      padding: const EdgeInsets.only(top: 95, left: 260),
                       child: Container(
                         height: 30,
                         width: 100,
@@ -342,25 +455,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                       ))
                   : Container(
-                      padding: EdgeInsets.only(top: 85, left: 325),
+                      padding: const EdgeInsets.only(top: 85, left: 325),
                       child: IconButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  EditProfilePage(user: widget.profileUser),
-                            ),
-                          ).then((value) {
-                            if (value == "fails" || value == null) {
-                              print('this is fails');
-                            } else {
-                              setState(() {
-                                print(value);
-                                widget.currentUser = value;
-                              });
-                            }
-                          });
+                          !widget.currentUser.banned!
+                              ? Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditProfilePage(
+                                        user: widget.profileUser),
+                                  ),
+                                ).then((value) {
+                                  if (value == "fails" || value == null) {
+                                    print('this is fails');
+                                  } else {
+                                    setState(() {
+                                      print(value);
+                                      widget.currentUser = value;
+                                    });
+                                  }
+                                })
+                              : Fluttertoast.showToast(
+                                  msg: "Bạn đã bị cấm bởi admin.");
                         },
                         icon: const Icon(
                           FontAwesomeIcons.userEdit,

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -54,6 +55,8 @@ class _PostMealState extends State<PostMeal> {
   CollectionReference postRef = FirebaseFirestore.instance.collection('Meals');
   CollectionReference materialRef =
       FirebaseFirestore.instance.collection('Material');
+  CollectionReference mealTypeRef =
+      FirebaseFirestore.instance.collection('meal_type');
   DateTime timeStamp = DateTime.now();
 
   final cloudinary = CloudinaryPublic('dqx5uvzry', 'nbln9qlo', cache: false);
@@ -127,16 +130,6 @@ class _PostMealState extends State<PostMeal> {
         });
   }
 
-  bool checkValid() {
-    if (moTaController.text.isEmpty ||
-        tenMonAnController.text.isEmpty ||
-        cachCheBienController.text.isEmpty ||
-        listOfMaterials.isEmpty) {
-      return false;
-    }
-    return true;
-  }
-
   handleSubmit() async {
     setState(() {
       isUploading = true;
@@ -150,7 +143,9 @@ class _PostMealState extends State<PostMeal> {
           CloudinaryFile.fromFile(convertedFile.path,
               resourceType: CloudinaryResourceType.Image),
         );
-        createPostInFireStore(mediaUrl: response.secureUrl);
+        String idLoaiMonAn = await getIdFromMealTypeName(dropdownValue);
+        createPostInFireStore(
+            mediaUrl: response.secureUrl, idLoaiMonAn: idLoaiMonAn);
         moTaController.clear();
         tenMonAnController.clear();
         cachCheBienController.clear();
@@ -169,7 +164,6 @@ class _PostMealState extends State<PostMeal> {
         isUploading = false;
       });
     }
-    
   }
 
   String stringFormat(List<Materials> list) {
@@ -208,7 +202,19 @@ class _PostMealState extends State<PostMeal> {
   //   return result;
   // }
 
-  createPostInFireStore({required String mediaUrl}) {
+  Future<String> getIdFromMealTypeName(String mealTypeName) async {
+    String id = '';
+    List<MealType> listOfMealType = [];
+    QuerySnapshot snapshot =
+        await mealTypeRef.where('tenLoaiMonAn', isEqualTo: mealTypeName).get();
+    listOfMealType +=
+        snapshot.docs.map((e) => MealType.fromDocument(e)).toList();
+    id = listOfMealType.first.id;
+    return id;
+  }
+
+  createPostInFireStore(
+      {required String mediaUrl, required String idLoaiMonAn}) {
     for (Materials material in listOfMaterials) {
       materialRef.doc(material.idThanhPhan).set({
         "id": material.idThanhPhan,
@@ -226,7 +232,7 @@ class _PostMealState extends State<PostMeal> {
       "doKho": doKho,
       "doPhoBien": doPhoBien,
       "hinhAnh": mediaUrl,
-      "loaiMonAn": dropdownValue,
+      "loaiMonAn": idLoaiMonAn,
       "moTa": moTaController.text,
       "tenMonAn": tenMonAnController.text,
       "thanhPhan": result,
@@ -245,6 +251,23 @@ class _PostMealState extends State<PostMeal> {
       downloadURL = await res.ref.getDownloadURL();
     });
     return downloadURL;
+  }
+
+  checkValid() {
+    if (moTaController.text.trim().isEmpty ||
+        tenMonAnController.text.trim().isEmpty ||
+        cachCheBienController.text.trim().isEmpty ||
+        doPhoBien == 0 ||
+        doKho == 0 ||
+        listOfMaterials.isEmpty) {
+      Fluttertoast.showToast(
+          msg: "Vui lòng điền đủ thông tin!",
+          backgroundColor: Colors.white,
+          textColor: Colors.black);
+      return false;
+    }
+
+    return true;
   }
 
   compressImage() async {
@@ -295,7 +318,16 @@ class _PostMealState extends State<PostMeal> {
                 child: ElevatedButton(
                   style:
                       ElevatedButton.styleFrom(primary: Colors.grey.shade600),
-                  onPressed: () => selectImage(context),
+                  onPressed: () {
+                    if (!widget.user.banned!) {
+                      selectImage(context);
+                    } else {
+                      Fluttertoast.showToast(
+                          msg: "Bạn đã bị cấm bởi admin!",
+                          backgroundColor: Colors.white,
+                          textColor: Colors.black);
+                    }
+                  },
                   child: const Text(
                     "Chọn ảnh để tạo bài viết món ăn",
                     style: TextStyle(color: Colors.white),

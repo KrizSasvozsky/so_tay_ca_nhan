@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Widgets/chat_page_detail.dart';
 
@@ -29,12 +30,15 @@ class ChatHeaderWidget extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 12),
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => ChatPageDetail(
-                            user: users[index],
-                            currentUser: currentUser,
-                          ),
-                        ));
+                        !users.elementAt(index).banned!
+                            ? Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => ChatPageDetail(
+                                  user: users[index],
+                                  currentUser: currentUser,
+                                ),
+                              ))
+                            : Fluttertoast.showToast(
+                                msg: "Người dùng đã bị cấm bởi admin");
                       },
                       child: CircleAvatar(
                         radius: 24,

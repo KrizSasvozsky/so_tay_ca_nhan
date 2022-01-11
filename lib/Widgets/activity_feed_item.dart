@@ -108,12 +108,12 @@ class ActivityFeedItem extends StatelessWidget {
           onLongPress: () => showDialog(
             context: context,
             builder: (BuildContext context) => AlertDialog(
-              title: Text('Xóa thông báo'),
-              content: Text('Bạn có muốn xóa thông báo này không?'),
+              title: const Text('Xóa thông báo'),
+              content: const Text('Bạn có muốn xóa thông báo này không?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text("Hủy"),
+                  child: const Text("Hủy"),
                 ),
                 TextButton(
                   onPressed: () {
@@ -121,7 +121,7 @@ class ActivityFeedItem extends StatelessWidget {
                     deleteFeed(feed.feedId);
                     data.deleteFeed(index);
                   },
-                  child: Text("Đồng ý"),
+                  child: const Text("Đồng ý"),
                 ),
               ],
             ),
@@ -135,7 +135,7 @@ class ActivityFeedItem extends StatelessWidget {
             title: RichText(
               overflow: TextOverflow.ellipsis,
               text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black),
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
                   children: [
                     TextSpan(
                       text: feed.username,

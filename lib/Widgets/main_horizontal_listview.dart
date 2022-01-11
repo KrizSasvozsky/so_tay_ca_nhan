@@ -46,7 +46,7 @@ class _MainHorizontalListViewState extends State<MainHorizontalListView> {
                       onTap: () {
                         setState(() {
                           _selectedIndex = index;
-                          data.changeData(ingre['tenLoaiNguyenLieu']);
+                          data.changeData(ingre['idLoaiNguyenLieu']);
                         });
                       },
                       child: Container(

@@ -7,15 +7,16 @@ class Users {
   String? username;
   String? bio;
   bool? quyenHan;
+  bool? banned;
 
-  Users({
-    this.id,
-    this.email,
-    this.hinhAnh,
-    this.quyenHan,
-    this.username,
-    this.bio,
-  });
+  Users(
+      {this.id,
+      this.email,
+      this.hinhAnh,
+      this.quyenHan,
+      this.username,
+      this.bio,
+      this.banned});
 
   factory Users.fromDocument(DocumentSnapshot doc) {
     return Users(
@@ -25,6 +26,7 @@ class Users {
       username: doc['username'],
       quyenHan: doc['quyenHan'],
       id: doc['id'],
+      banned: doc['banned'],
     );
   }
 }

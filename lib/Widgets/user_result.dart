@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Views/profile_page.dart';
 import 'package:so_tay_mon_an/Widgets/circular_progress.dart';
@@ -6,7 +7,12 @@ import 'package:so_tay_mon_an/Widgets/circular_progress.dart';
 class UserResult extends StatelessWidget {
   Users user;
   Users currentUser;
-  UserResult({Key? key, required this.user, required this.currentUser})
+  bool isAdmin;
+  UserResult(
+      {Key? key,
+      required this.user,
+      required this.currentUser,
+      required this.isAdmin})
       : super(key: key);
 
   @override
@@ -15,16 +21,19 @@ class UserResult extends StatelessWidget {
       children: [
         GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProfilePage(
-                  profileUser: user,
-                  currentUser: currentUser,
-                  fromSearchPage: true,
-                ),
-              ),
-            );
+            !user.banned!
+                ? Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfilePage(
+                        profileUser: user,
+                        currentUser: currentUser,
+                        fromSearchPage: true,
+                        isAdmin: isAdmin,
+                      ),
+                    ),
+                  )
+                : Fluttertoast.showToast(msg: "Người dùng đã bị cấm!");
           },
           child: Container(
             height: 80,
@@ -35,7 +44,7 @@ class UserResult extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    user.hinhAnh != null
+                    user.hinhAnh != null || user.banned!
                         ? Container(
                             height: 80,
                             width: 80,
@@ -91,13 +100,21 @@ class UserResult extends StatelessWidget {
                             width: double.infinity,
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                user.username.toString(),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17),
-                              ),
+                              child: !user.banned!
+                                  ? Text(
+                                      user.username.toString(),
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 17),
+                                    )
+                                  : const Text(
+                                      "Người dùng đã bị cấm!",
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 17),
+                                    ),
                             ),
                           ),
                           Container(
@@ -114,9 +131,13 @@ class UserResult extends StatelessWidget {
                                     BorderSide(color: Colors.amber, width: 2),
                               ),
                             ),
-                            child: Text(
-                              user.email.toString(),
-                            ),
+                            child: !user.banned!
+                                ? Text(
+                                    user.email.toString(),
+                                  )
+                                : const Text(
+                                    "Người dùng đã bị cấm!",
+                                  ),
                           ),
                         ],
                       ),

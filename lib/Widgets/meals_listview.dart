@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
+import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
 import 'package:so_tay_mon_an/Models/meal_type.dart';
 import 'package:provider/provider.dart';
 import 'package:so_tay_mon_an/Models/meal_type_string.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Views/edit_ingredient.dart';
 import 'package:so_tay_mon_an/Views/ingredient_detail.dart';
@@ -24,13 +26,47 @@ class MealsListView extends StatefulWidget {
 class _MealsListViewState extends State<MealsListView> {
   CollectionReference ingreRef =
       FirebaseFirestore.instance.collection('Ingredients');
+  CollectionReference ingredientTypeRef =
+      FirebaseFirestore.instance.collection('Ingredients_Type');
+  CollectionReference unitRef = FirebaseFirestore.instance.collection('Units');
+
+  List<IngredientType> listOfIngreType = [];
+  List<Unit> listOfUnit = [];
+
+  getlist() async {
+    QuerySnapshot snapshot = await ingredientTypeRef.get();
+    QuerySnapshot unitSnapshot = await unitRef.get();
+    setState(() {
+      listOfIngreType +=
+          snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
+      listOfUnit += unitSnapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    });
+  }
 
   deleteIngredient(String id) {
     ingreRef.doc(id).get().then((value) => value.reference.delete());
   }
 
+  getNameFromIngredientTypeId(String id) {
+    String result = '';
+    for (IngredientType ingredientType in listOfIngreType) {
+      if (ingredientType.idLoaiNguyenLieu.compareTo(id) == 0)
+        result = ingredientType.tenLoaiNguyenLieu;
+    }
+    return result;
+  }
+
+  getNameFromUnitId(String id) {
+    String result = '';
+    for (Unit unit in listOfUnit) {
+      if (unit.id.compareTo(id) == 0) result = unit.tenDonVi;
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
+    getlist();
     final data = Provider.of<MealTypeString>(context).data;
 
     Stream<QuerySnapshot<Map<String, dynamic>>> _selectedStream =
@@ -38,6 +74,7 @@ class _MealsListViewState extends State<MealsListView> {
             .collection('Ingredients')
             .where('loaiNguyenLieu', isEqualTo: data)
             .snapshots();
+
     return StreamBuilder(
         stream: _selectedStream,
         builder: (context,
@@ -47,6 +84,7 @@ class _MealsListViewState extends State<MealsListView> {
               child: CircularProgress(),
             );
           }
+          // print(snapshot.data!.docs.length);
           return ListView.builder(
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
@@ -198,10 +236,12 @@ class _MealsListViewState extends State<MealsListView> {
                                         ingre.xuatXu.toString() +
                                         "\n" +
                                         "Loại nguyên liệu: " +
-                                        ingre.loaiNguyenLieu.toString() +
+                                        getNameFromIngredientTypeId(
+                                            ingre.loaiNguyenLieu.toString()) +
                                         "\n" +
                                         "Đơn vị: " +
-                                        ingre.donVi.toString()),
+                                        getNameFromUnitId(
+                                            ingre.donVi.toString())),
                                   ),
                                 ),
                               ],

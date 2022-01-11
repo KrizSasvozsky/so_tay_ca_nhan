@@ -173,7 +173,8 @@ class _LoginPageState extends State<LoginPage> {
                                                   email: user.email,
                                                   hinhAnh: user.photoURL,
                                                   quyenHan: false,
-                                                  username: user.displayName),
+                                                  username: user.displayName,
+                                                  banned: false),
                                             )));
                               }
                             }

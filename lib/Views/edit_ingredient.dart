@@ -12,6 +12,7 @@ import 'package:image/image.dart' as Im;
 import 'package:provider/provider.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
+import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/material_list.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
@@ -43,7 +44,7 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
   String dropdownLoaiNguyenLieu = '';
 
   List<String> listOfUnits = [];
-  List<String> listOfIngreType = [];
+  List<IngredientType> listOfIngreType = [];
 
   CollectionReference unitsRef = FirebaseFirestore.instance.collection('Units');
   CollectionReference ingredientTypeRef =
@@ -134,12 +135,13 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
         });
   }
 
-  updateIngredientInFireStore({required String mediaUrl}) {
+  updateIngredientInFireStore(
+      {required String mediaUrl, required String idLoaiNguyenLieu}) {
     ingredientRef.doc(widget.ingredient.idNguyenLieu).update({
       "baoQuan": cachBaoQuanCtrller.text,
       "donVi": dropdownDonVi,
       "giaTriDinhDuong": giaTriDinhDuongCtrller.text,
-      "loaiNguyenLieu": dropdownLoaiNguyenLieu,
+      "loaiNguyenLieu": idLoaiNguyenLieu,
       "tenNguyenLieu": tenNguyenLieuCtrller.text,
       "thuongHieu": thuongHieuCtrller.text,
       "xuatXu": xuatXuCtrller.text,
@@ -160,10 +162,16 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
           CloudinaryFile.fromFile(convertedFile.path,
               resourceType: CloudinaryResourceType.Image),
         );
-        await updateIngredientInFireStore(mediaUrl: response.secureUrl);
-      } else {
+        String idLoaiNguyenLieu =
+            await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
         await updateIngredientInFireStore(
-            mediaUrl: widget.ingredient.hinhAnh.toString());
+            mediaUrl: response.secureUrl, idLoaiNguyenLieu: idLoaiNguyenLieu);
+      } else {
+        String idLoaiNguyenLieu =
+            await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
+        await updateIngredientInFireStore(
+            mediaUrl: widget.ingredient.hinhAnh.toString(),
+            idLoaiNguyenLieu: idLoaiNguyenLieu);
       }
       Navigator.pop(context);
     } on CloudinaryException catch (e) {
@@ -188,15 +196,38 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
     await unitsRef.get().then((QuerySnapshot snapshotvalue) {
       snapshotvalue.docs.forEach((f) => {listOfUnits.add(f['tenDonVi'])});
     });
-    await ingredientTypeRef.get().then((QuerySnapshot snapshotvalue) {
-      snapshotvalue.docs
-          .forEach((f) => {listOfIngreType.add(f['tenLoaiNguyenLieu'])});
+    QuerySnapshot snapshot = await ingredientTypeRef.get();
+    setState(() {
+      listOfIngreType +=
+          snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
     });
+    String result = await getNameFromIngredientTypeId(
+        widget.ingredient.loaiNguyenLieu.toString());
     setState(() {
       dropdownDonVi = widget.ingredient.donVi.toString();
-      dropdownLoaiNguyenLieu = widget.ingredient.loaiNguyenLieu.toString();
+      dropdownLoaiNguyenLieu = result;
     });
   }
+
+  Future<String> getNameFromIngredientTypeId(String id) async {
+    List<IngredientType> listOfIngre = [];
+    final snapshot = await ingredientTypeRef.doc(id).get();
+    IngredientType ingredientType = IngredientType.fromDocument(snapshot);
+    return ingredientType.tenLoaiNguyenLieu;
+  }
+
+  Future<String> getIdFromIngredientTypeName(String ingredientTypeName) async {
+    String id = '';
+    List<IngredientType> listOfIngre = [];
+    QuerySnapshot snapshot = await ingredientTypeRef
+        .where('tenLoaiNguyenLieu', isEqualTo: ingredientTypeName)
+        .get();
+    listOfIngre +=
+        snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
+    id = listOfIngre.first.idLoaiNguyenLieu;
+    return id;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -329,11 +360,11 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
                       });
                     },
                     items: listOfIngreType
-                        .map<DropdownMenuItem<String>>((String value) {
+                        .map<DropdownMenuItem<String>>((IngredientType value) {
                       return DropdownMenuItem<String>(
-                        value: value,
+                        value: value.tenLoaiNguyenLieu,
                         child: Text(
-                          value,
+                          value.tenLoaiNguyenLieu,
                         ),
                       );
                     }).toList(),

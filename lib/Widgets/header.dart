@@ -4,9 +4,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class Header extends StatelessWidget {
-  const Header({
+  Header({
     Key? key,
   }) : super(key: key);
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void controlMenu() {
+    if (!_scaffoldKey.currentState!.isDrawerOpen) {
+      _scaffoldKey.currentState!.openDrawer();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +22,10 @@ class Header extends StatelessWidget {
       children: [
         IconButton(
           icon: Icon(Icons.menu),
-          onPressed: context.read<MenuController>().controlMenu,
+          color: Colors.white,
+          onPressed: () {
+            controlMenu();
+          },
         ),
         Spacer(),
         SizedBox(
