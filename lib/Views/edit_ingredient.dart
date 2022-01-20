@@ -16,6 +16,7 @@ import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/material_list.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Widgets/choose_ingredient.dart';
 import 'package:so_tay_mon_an/Widgets/material_card.dart';
@@ -43,7 +44,7 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
   String dropdownDonVi = '';
   String dropdownLoaiNguyenLieu = '';
 
-  List<String> listOfUnits = [];
+  List<Unit> listOfUnits = [];
   List<IngredientType> listOfIngreType = [];
 
   CollectionReference unitsRef = FirebaseFirestore.instance.collection('Units');
@@ -136,7 +137,9 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
   }
 
   updateIngredientInFireStore(
-      {required String mediaUrl, required String idLoaiNguyenLieu}) {
+      {required String mediaUrl,
+      required String idLoaiNguyenLieu,
+      required String idDonVi}) {
     ingredientRef.doc(widget.ingredient.idNguyenLieu).update({
       "baoQuan": cachBaoQuanCtrller.text,
       "donVi": dropdownDonVi,
@@ -164,20 +167,35 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
         );
         String idLoaiNguyenLieu =
             await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
+        String idDonVi = await getIdFromUnitName(dropdownDonVi);
         await updateIngredientInFireStore(
-            mediaUrl: response.secureUrl, idLoaiNguyenLieu: idLoaiNguyenLieu);
+            mediaUrl: response.secureUrl,
+            idLoaiNguyenLieu: idLoaiNguyenLieu,
+            idDonVi: idDonVi);
       } else {
         String idLoaiNguyenLieu =
             await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
+        String idDonVi = await getIdFromUnitName(dropdownDonVi);
         await updateIngredientInFireStore(
             mediaUrl: widget.ingredient.hinhAnh.toString(),
-            idLoaiNguyenLieu: idLoaiNguyenLieu);
+            idLoaiNguyenLieu: idLoaiNguyenLieu,
+            idDonVi: idDonVi);
       }
       Navigator.pop(context);
     } on CloudinaryException catch (e) {
       print(e.message);
       print(e.request);
     }
+  }
+
+  Future<String> getIdFromUnitName(String unitName) async {
+    String id = '';
+    List<Unit> listOfUnits = [];
+    QuerySnapshot snapshot =
+        await unitsRef.where('tenDonVi', isEqualTo: unitName).get();
+    listOfUnits += snapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    id = listOfUnits.first.id;
+    return id;
   }
 
   compressImage() async {
@@ -193,24 +211,34 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
   }
 
   getDropdownValues() async {
-    await unitsRef.get().then((QuerySnapshot snapshotvalue) {
-      snapshotvalue.docs.forEach((f) => {listOfUnits.add(f['tenDonVi'])});
-    });
+    // await unitsRef.get().then((QuerySnapshot snapshotvalue) {
+    //   snapshotvalue.docs.forEach((f) => {listOfUnits.add(f['tenDonVi'])});
+    // });
+    QuerySnapshot snapshotUnit = await unitsRef.get();
     QuerySnapshot snapshot = await ingredientTypeRef.get();
     setState(() {
       listOfIngreType +=
           snapshot.docs.map((e) => IngredientType.fromDocument(e)).toList();
+      listOfUnits +=
+          snapshotUnit.docs.map((e) => Unit.fromDocument(e)).toList();
     });
     String result = await getNameFromIngredientTypeId(
         widget.ingredient.loaiNguyenLieu.toString());
+    String resultUnit =
+        await getNameFromUnitId(widget.ingredient.donVi.toString());
     setState(() {
-      dropdownDonVi = widget.ingredient.donVi.toString();
+      dropdownDonVi = resultUnit;
       dropdownLoaiNguyenLieu = result;
     });
   }
 
+  Future<String> getNameFromUnitId(String id) async {
+    final snapshot = await unitsRef.doc(id).get();
+    Unit unit = Unit.fromDocument(snapshot);
+    return unit.tenDonVi;
+  }
+
   Future<String> getNameFromIngredientTypeId(String id) async {
-    List<IngredientType> listOfIngre = [];
     final snapshot = await ingredientTypeRef.doc(id).get();
     IngredientType ingredientType = IngredientType.fromDocument(snapshot);
     return ingredientType.tenLoaiNguyenLieu;
@@ -227,7 +255,6 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
     id = listOfIngre.first.idLoaiNguyenLieu;
     return id;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -404,12 +431,12 @@ class _EditIngredientPageState extends State<EditIngredientPage> {
                         dropdownDonVi = newValue!;
                       });
                     },
-                    items: listOfUnits
-                        .map<DropdownMenuItem<String>>((String value) {
+                    items:
+                        listOfUnits.map<DropdownMenuItem<String>>((Unit value) {
                       return DropdownMenuItem<String>(
-                        value: value,
+                        value: value.tenDonVi,
                         child: Text(
-                          value,
+                          value.tenDonVi,
                         ),
                       );
                     }).toList(),

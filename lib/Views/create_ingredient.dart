@@ -11,8 +11,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:so_tay_mon_an/Models/ingredient_type.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:image/image.dart' as Im;
+import 'package:so_tay_mon_an/Widgets/circular_progress.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateIngredientPage extends StatefulWidget {
@@ -74,12 +76,23 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
     return id;
   }
 
+  Future<String> getIdFromUnitName(String unitName) async {
+    String id = '';
+    List<Unit> listOfUnits = [];
+    QuerySnapshot snapshot =
+        await unitsRef.where('tenDonVi', isEqualTo: unitName).get();
+    listOfUnits += snapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    id = listOfUnits.first.id;
+    return id;
+  }
+
   handleTakePhoto() async {
     Navigator.pop(context);
     XFile? file = await ImagePicker()
         .pickImage(source: ImageSource.camera, maxHeight: 675, maxWidth: 960);
     setState(() {
       this.file = file;
+      isSelectImage = true;
     });
   }
 
@@ -88,6 +101,7 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
     XFile? file = await ImagePicker().pickImage(source: ImageSource.gallery);
     setState(() {
       this.file = file;
+      isSelectImage = true;
     });
   }
 
@@ -116,11 +130,13 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
   }
 
   createPostInFireStore(
-      {required String mediaUrl, required String idLoaiNguyenLieu}) {
+      {required String mediaUrl,
+      required String idLoaiNguyenLieu,
+      required String idDonVi}) {
     ingredientRef.doc(postID).set({
       "idNguyenLieu": postID,
       "baoQuan": cachBaoQuanCtrller.text,
-      "donVi": dropdownDonVi,
+      "donVi": idDonVi,
       "giaTriDinhDuong": giaTriDinhDuongCtrller.text,
       "loaiNguyenLieu": idLoaiNguyenLieu,
       "nguoiDang": widget.currentUser.id,
@@ -133,12 +149,11 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
   }
 
   handleSubmit() async {
-    setState(() {
-      isUploading = true;
-    });
-
     if (checkValid()) {
       try {
+        setState(() {
+          isUploading = true;
+        });
         await compressImage();
         File convertedFile = File(this.file!.path);
         CloudinaryResponse response = await cloudinary.uploadFile(
@@ -147,10 +162,15 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
         );
         String idLoaiNguyenLieu =
             await getIdFromIngredientTypeName(dropdownLoaiNguyenLieu);
+        String idDonVi = await getIdFromUnitName(dropdownDonVi);
         await createPostInFireStore(
-            mediaUrl: response.secureUrl, idLoaiNguyenLieu: idLoaiNguyenLieu);
+            mediaUrl: response.secureUrl,
+            idLoaiNguyenLieu: idLoaiNguyenLieu,
+            idDonVi: idDonVi);
+        setState(() {
+          isUploading = false;
+        });
         Navigator.pop(context, tenNguyenLieuCtrller.text);
-        print(response.secureUrl);
       } on CloudinaryException catch (e) {
         print(e.message);
         print(e.request);
@@ -162,8 +182,9 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
     if (!isSelectImage) {
       Fluttertoast.showToast(
           msg: "Vui lòng chọn hình ảnh!",
-          backgroundColor: Colors.white,
-          textColor: Colors.black);
+          backgroundColor: Colors.black,
+          textColor: Colors.white);
+      return false;
     }
     if (tenNguyenLieuCtrller.text.trim().isEmpty ||
         thuongHieuCtrller.text.trim().isEmpty ||
@@ -172,8 +193,8 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
         xuatXuCtrller.text.trim().isEmpty) {
       Fluttertoast.showToast(
           msg: "Vui lòng điền đủ thông tin!",
-          backgroundColor: Colors.white,
-          textColor: Colors.black);
+          backgroundColor: Colors.black,
+          textColor: Colors.white);
       return false;
     }
 
@@ -231,237 +252,246 @@ class _CreateIngredientPageState extends State<CreateIngredientPage> {
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: ListView(
-          children: [
-            GestureDetector(
-              onTap: () => selectImage(context),
-              child: SizedBox(
-                height: 220,
-                width: MediaQuery.of(context).size.width * 0.8,
-                child: Center(
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              fit: BoxFit.cover,
-                              image: file != null
-                                  ? FileImage(File(file!.path))
-                                  : const CachedNetworkImageProvider(
-                                          'https://www.rusu.co.uk/pageassets/representation/change-it/card-submit-an-idea.jpg')
-                                      as ImageProvider,
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: ListView(
+              children: [
+                GestureDetector(
+                  onTap: () => selectImage(context),
+                  child: SizedBox(
+                    height: 220,
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  fit: BoxFit.cover,
+                                  image: file != null
+                                      ? FileImage(File(file!.path))
+                                      : const CachedNetworkImageProvider(
+                                              'https://www.rusu.co.uk/pageassets/representation/change-it/card-submit-an-idea.jpg')
+                                          as ImageProvider,
+                                ),
+                              ),
                             ),
-                          ),
+                            const Center(
+                              child: Icon(
+                                FontAwesomeIcons.edit,
+                                size: 50,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Center(
-                          child: Icon(
-                            FontAwesomeIcons.edit,
-                            size: 50,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                title: SizedBox(
-                  width: 250,
-                  child: TextField(
-                    controller: tenNguyenLieuCtrller,
-                    decoration: const InputDecoration(
-                      hintText: "Tên Nguyên Liệu...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                title: SizedBox(
-                  width: 250,
-                  child: TextField(
-                    controller: thuongHieuCtrller,
-                    decoration: const InputDecoration(
-                      hintText: "Thương Hiệu...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              width: MediaQuery.of(context).size.width * 0.5,
-              child: Row(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(15.0),
-                    child: Text(
-                      'Loại Nguyên Liệu: ',
-                      style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DropdownButton<String>(
-                    value: dropdownLoaiNguyenLieu,
-                    icon: const Icon(Icons.arrow_downward),
-                    iconSize: 24,
-                    elevation: 16,
-                    style: const TextStyle(color: Colors.black),
-                    underline: Container(
-                      width: 50,
-                      height: 2,
-                      color: Colors.deepPurpleAccent,
-                    ),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        dropdownLoaiNguyenLieu = newValue!;
-                      });
-                    },
-                    items: listOfIngreType
-                        .map<DropdownMenuItem<String>>((IngredientType value) {
-                      return DropdownMenuItem<String>(
-                        value: value.tenLoaiNguyenLieu,
-                        child: Text(
-                          value.tenLoaiNguyenLieu,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              width: MediaQuery.of(context).size.width * 0.5,
-              child: Row(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.all(15.0),
-                    child: Text(
-                      'Đơn Vị: ',
-                      style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  DropdownButton<String>(
-                    value: dropdownDonVi,
-                    icon: const Icon(Icons.arrow_downward),
-                    iconSize: 24,
-                    elevation: 16,
-                    style: const TextStyle(color: Colors.black),
-                    underline: Container(
-                      width: 50,
-                      height: 2,
-                      color: Colors.deepPurpleAccent,
-                    ),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        dropdownDonVi = newValue!;
-                      });
-                    },
-                    items: listOfUnits
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          value,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                title: SizedBox(
-                  width: 250,
-                  child: TextField(
-                    controller: cachBaoQuanCtrller,
-                    decoration: const InputDecoration(
-                      hintText: "Cách Bảo Quản...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                title: SizedBox(
-                  width: 250,
-                  child: TextField(
-                    controller: giaTriDinhDuongCtrller,
-                    decoration: const InputDecoration(
-                      suffix: Text(
-                        'Calo',
-                        style: TextStyle(color: Colors.black),
                       ),
-                      hintText: "Giá Trị Dinh Dưỡng...",
-                      border: InputBorder.none,
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: <TextInputFormatter>[
-                      FilteringTextInputFormatter.digitsOnly
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: tenNguyenLieuCtrller,
+                        decoration: const InputDecoration(
+                          hintText: "Tên Nguyên Liệu...",
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: thuongHieuCtrller,
+                        decoration: const InputDecoration(
+                          hintText: "Thương Hiệu...",
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(15.0),
+                        child: Text(
+                          'Loại Nguyên Liệu: ',
+                          style: TextStyle(
+                              color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: dropdownLoaiNguyenLieu,
+                        icon: const Icon(Icons.arrow_downward),
+                        iconSize: 24,
+                        elevation: 16,
+                        style: const TextStyle(color: Colors.black),
+                        underline: Container(
+                          width: 50,
+                          height: 2,
+                          color: Colors.deepPurpleAccent,
+                        ),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            dropdownLoaiNguyenLieu = newValue!;
+                          });
+                        },
+                        items: listOfIngreType.map<DropdownMenuItem<String>>(
+                            (IngredientType value) {
+                          return DropdownMenuItem<String>(
+                            value: value.tenLoaiNguyenLieu,
+                            child: Text(
+                              value.tenLoaiNguyenLieu,
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(
-              height: 5,
-            ),
-            Container(
-              color: Colors.white,
-              child: ListTile(
-                title: SizedBox(
-                  width: 250,
-                  child: TextField(
-                    controller: xuatXuCtrller,
-                    decoration: const InputDecoration(
-                      hintText: "Xuất xứ...",
-                      border: InputBorder.none,
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(15.0),
+                        child: Text(
+                          'Đơn Vị: ',
+                          style: TextStyle(
+                              color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: dropdownDonVi,
+                        icon: const Icon(Icons.arrow_downward),
+                        iconSize: 24,
+                        elevation: 16,
+                        style: const TextStyle(color: Colors.black),
+                        underline: Container(
+                          width: 50,
+                          height: 2,
+                          color: Colors.deepPurpleAccent,
+                        ),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            dropdownDonVi = newValue!;
+                          });
+                        },
+                        items: listOfUnits
+                            .map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: cachBaoQuanCtrller,
+                        decoration: const InputDecoration(
+                          hintText: "Cách Bảo Quản...",
+                          border: InputBorder.none,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: giaTriDinhDuongCtrller,
+                        decoration: const InputDecoration(
+                          suffix: Text(
+                            'Calo',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          hintText: "Giá Trị Dinh Dưỡng...",
+                          border: InputBorder.none,
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Container(
+                  color: Colors.white,
+                  child: ListTile(
+                    title: SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: xuatXuCtrller,
+                        decoration: const InputDecoration(
+                          hintText: "Xuất xứ...",
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+              ],
             ),
-            const SizedBox(
-              height: 5,
-            ),
-          ],
-        ),
+          ),
+          isUploading
+              ? Center(
+                  child: CircularProgress(),
+                )
+              : const SizedBox(),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
@@ -7,6 +8,7 @@ import 'package:so_tay_mon_an/Models/ingredient_type.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
 import 'package:so_tay_mon_an/Models/meal_list_notifi.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
+import 'package:so_tay_mon_an/Views/create_ingredient.dart';
 import 'package:so_tay_mon_an/Views/edit_ingredient.dart';
 import 'package:so_tay_mon_an/Views/ingredient_detail.dart';
 import 'package:so_tay_mon_an/Widgets/profile_meal_listview.dart';
@@ -63,7 +65,19 @@ class _IngredientManagementPageState extends State<IngredientManagementPage> {
           centerTitle: true,
           actions: [
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                !widget.user.banned!
+                    ? Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateIngredientPage(
+                            currentUser: widget.user,
+                          ),
+                        ),
+                      )
+                    : Fluttertoast.showToast(
+                        msg: "Bạn đã bị cấm bởi admin");
+              },
               icon: const Icon(FontAwesomeIcons.plusCircle),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:so_tay_mon_an/Models/message.dart';
+import 'package:so_tay_mon_an/Widgets/fullscreen_image_widget.dart';
 
 class MessageWidget extends StatelessWidget {
   final Message message;
@@ -22,8 +23,10 @@ class MessageWidget extends StatelessWidget {
           CircleAvatar(
               radius: 16, backgroundImage: NetworkImage(message.hinhAnh)),
         Container(
-          padding: EdgeInsets.all(16),
-          margin: EdgeInsets.all(16),
+          padding: message.loaiTinNhan == "message"
+              ? const EdgeInsets.all(16)
+              : null,
+          margin: const EdgeInsets.all(16),
           constraints: BoxConstraints(maxWidth: 140),
           decoration: BoxDecoration(
             color: isMe ? Colors.grey[100] : Theme.of(context).accentColor,
@@ -39,21 +42,36 @@ class MessageWidget extends StatelessWidget {
                 ? borderRadius.subtract(BorderRadius.only(bottomRight: radius))
                 : borderRadius.subtract(BorderRadius.only(bottomLeft: radius)),
           ),
-          child: buildMessage(),
+          child: buildMessage(context),
         ),
       ],
     );
   }
 
-  Widget buildMessage() => Column(
+  Widget buildMessage(BuildContext context) => Column(
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            message.noiDung,
-            style: TextStyle(color: isMe ? Colors.black : Colors.white),
-            textAlign: isMe ? TextAlign.end : TextAlign.start,
-          ),
+          message.loaiTinNhan == "message"
+              ? Text(
+                  message.noiDung,
+                  style: TextStyle(color: isMe ? Colors.black : Colors.white),
+                  textAlign: isMe ? TextAlign.end : TextAlign.start,
+                )
+              : GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) {
+                      return FullScreenImage(
+                        imageUrl: message.tinNhanHinhAnh,
+                        tag: "generate_a_unique_tag",
+                      );
+                    }));
+                  },
+                  child: Hero(
+                    child: Image.network(message.tinNhanHinhAnh),
+                    tag: "generate_a_unique_tag",
+                  ),
+                ),
         ],
       );
 }

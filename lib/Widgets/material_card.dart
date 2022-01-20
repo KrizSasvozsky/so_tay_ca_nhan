@@ -5,6 +5,7 @@ import 'package:so_tay_mon_an/Models/ingredient.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/material_list.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/unit.dart';
 
 class MaterialCard extends StatefulWidget {
   final Materials material;
@@ -21,7 +22,9 @@ class _MaterialCardState extends State<MaterialCard> {
       FirebaseFirestore.instance.collection('Ingredients');
   CollectionReference materialRef =
       FirebaseFirestore.instance.collection('Material');
+  CollectionReference unitsRef = FirebaseFirestore.instance.collection('Units');
   Ingredient ingredients = Ingredient();
+  List<Unit> listOfUnit = [];
   @override
   void initState() {
     super.initState();
@@ -32,9 +35,27 @@ class _MaterialCardState extends State<MaterialCard> {
     });
   }
 
+  getlist() async {
+    QuerySnapshot snapshot = await unitsRef.get();
+    setState(() {
+      listOfUnit += snapshot.docs.map((e) => Unit.fromDocument(e)).toList();
+    });
+  }
+
+  getNameFromUnitId(String id) {
+    String result = '';
+    for (Unit unit in listOfUnit) {
+      if (unit.id.compareTo(id) == 0) {
+        result = unit.tenDonVi;
+      }
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = Provider.of<MaterialList>(context);
+    getlist();
     return GestureDetector(
       onLongPress: () {
         data.deleteMaterial(widget.index);
@@ -59,7 +80,7 @@ class _MaterialCardState extends State<MaterialCard> {
             children: [
               Text(widget.material.soLuong.toString() +
                   " " +
-                  ingredients.donVi.toString()),
+                  getNameFromUnitId(ingredients.donVi.toString())),
               const SizedBox(
                 width: 5,
               ),

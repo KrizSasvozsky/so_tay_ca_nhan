@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:liquid_swipe/liquid_swipe.dart';
 import 'package:so_tay_mon_an/Models/ingredient.dart';
@@ -69,7 +70,7 @@ class _ChooseIngredientDialogState extends State<ChooseIngredientDialog> {
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               FontAwesomeIcons.search,
                               size: 17,
                             ),
@@ -89,8 +90,8 @@ class _ChooseIngredientDialogState extends State<ChooseIngredientDialog> {
                             ),
                             GestureDetector(
                               onTap: () => searchController.clear(),
-                              child: Icon(
-                                FontAwesomeIcons.check,
+                              child: const Icon(
+                                FontAwesomeIcons.backspace,
                                 size: 17,
                               ),
                             ),
@@ -180,13 +181,17 @@ class _ChooseIngredientDialogState extends State<ChooseIngredientDialog> {
                     ]),
                 child: TextButton(
                     onPressed: () {
-                      String thanhPhanID = const Uuid().v4();
-                      Materials materials = Materials(
-                          idThanhPhan: thanhPhanID,
-                          soLuong: int.parse(soluongController.text),
-                          idNguyenLieu: ingre['idNguyenLieu']);
+                      if (soluongController.text.isEmpty) {
+                        Fluttertoast.showToast(msg: "Vui lòng nhập số lượng!");
+                      } else {
+                        String thanhPhanID = const Uuid().v4();
+                        Materials materials = Materials(
+                            idThanhPhan: thanhPhanID,
+                            soLuong: int.parse(soluongController.text),
+                            idNguyenLieu: ingre['idNguyenLieu']);
 
-                      Navigator.of(context).pop(materials);
+                        Navigator.of(context).pop(materials);
+                      }
                     },
                     child: Text(
                       name,

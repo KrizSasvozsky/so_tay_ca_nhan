@@ -14,6 +14,7 @@ import 'package:so_tay_mon_an/Models/ingredient.dart';
 import 'package:so_tay_mon_an/Models/material.dart';
 import 'package:so_tay_mon_an/Models/material_list.dart';
 import 'package:so_tay_mon_an/Models/meal.dart';
+import 'package:so_tay_mon_an/Models/meal_type.dart';
 import 'package:so_tay_mon_an/Models/user.dart';
 import 'package:so_tay_mon_an/Widgets/choose_ingredient.dart';
 import 'package:so_tay_mon_an/Widgets/material_card.dart';
@@ -41,7 +42,7 @@ class _EditMealPageState extends State<EditMealPage> {
   bool isSelectedAnewPicture = false;
   Meal currentMeal = Meal();
 
-  List<String> listOfMealType = [];
+  List<MealType> listOfMealType = [];
   List<String> listOfIngredientsName = [];
   List<Materials> listOfMaterials = [];
   List<Materials> deleteData = [];
@@ -53,6 +54,8 @@ class _EditMealPageState extends State<EditMealPage> {
   CollectionReference materialRef =
       FirebaseFirestore.instance.collection('Material');
   CollectionReference postRef = FirebaseFirestore.instance.collection('Meals');
+  CollectionReference mealTypeRef =
+      FirebaseFirestore.instance.collection('meal_type');
 
   final cloudinary = CloudinaryPublic('dqx5uvzry', 'nbln9qlo', cache: false);
 
@@ -74,16 +77,8 @@ class _EditMealPageState extends State<EditMealPage> {
                     })
                   })
             });
-    FirebaseFirestore.instance
-        .collection('meal_type')
-        .get()
-        .then((QuerySnapshot snapshotvalue) => {
-              snapshotvalue.docs.forEach((f) => {
-                    setState(() {
-                      listOfMealType.add(f['tenLoaiMonAn']);
-                    })
-                  })
-            });
+
+    getDropdownValues();
     getMaterials();
     moTaController.text = widget.meal.moTa.toString();
     tenMonAnController.text = widget.meal.tenMonAn.toString();
@@ -93,9 +88,28 @@ class _EditMealPageState extends State<EditMealPage> {
     dropdownValue = widget.meal.loaiMonAn.toString();
   }
 
+  getDropdownValues() async {
+    QuerySnapshot snapshot = await mealTypeRef.get();
+    setState(() {
+      listOfMealType +=
+          snapshot.docs.map((e) => MealType.fromDocument(e)).toList();
+    });
+    String resultUnit =
+        await getNameFromMealTypeId(widget.meal.loaiMonAn.toString());
+    setState(() {
+      dropdownValue = resultUnit;
+    });
+  }
+
+  Future<String> getNameFromMealTypeId(String id) async {
+    final snapshot = await mealTypeRef.doc(id).get();
+    MealType mealType = MealType.fromDocument(snapshot);
+    return mealType.tenLoaiMonAn;
+  }
+
   getMaterials() async {
     List<String> listOfId = [];
-    String result = ''; 
+    String result = '';
     widget.meal.thanhPhan.keys.forEach((val) {
       listOfId.add(val);
     });
@@ -451,11 +465,11 @@ class _EditMealPageState extends State<EditMealPage> {
                         });
                       },
                       items: listOfMealType
-                          .map<DropdownMenuItem<String>>((String value) {
+                          .map<DropdownMenuItem<String>>((MealType value) {
                         return DropdownMenuItem<String>(
-                          value: value,
+                          value: value.tenLoaiMonAn,
                           child: Text(
-                            value,
+                            value.tenLoaiMonAn,
                           ),
                         );
                       }).toList(),

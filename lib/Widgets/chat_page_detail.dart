@@ -23,31 +23,34 @@ class _ChatPageState extends State<ChatPageDetail> {
   Widget build(BuildContext context) => Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.blueGrey[900],
-        body: SafeArea(
-          child: Column(
-            children: [
-              ProfileHeader(name: widget.user.username.toString()),
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(25),
-                      topRight: Radius.circular(25),
+        body: GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                ProfileHeader(name: widget.user.username.toString()),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(25),
+                        topRight: Radius.circular(25),
+                      ),
+                    ),
+                    child: MessagesWidget(
+                      idUser: widget.user.id.toString(),
+                      currentUser: widget.currentUser,
                     ),
                   ),
-                  child: MessagesWidget(
-                    idUser: widget.user.id.toString(),
-                    currentUser: widget.currentUser,
-                  ),
                 ),
-              ),
-              NewMessageWidget(
-                idUser: widget.user.id.toString(),
-                currentUser: widget.currentUser,
-              )
-            ],
+                NewMessageWidget(
+                  idUser: widget.user.id.toString(),
+                  currentUser: widget.currentUser,
+                ),
+              ],
+            ),
           ),
         ),
       );

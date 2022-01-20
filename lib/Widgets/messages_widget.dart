@@ -24,7 +24,7 @@ class _MessagesWidgetState extends State<MessagesWidget> {
   ScrollController _chatScrollController = ScrollController();
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
-  int loadMoreMsgs = 10;
+  int loadMoreMsgs = 5;
 
   void _onRefresh() async {
     // monitor network fetch

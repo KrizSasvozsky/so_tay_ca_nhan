@@ -7,6 +7,8 @@ class Message {
   final String tenNguoiDung;
   final String noiDung;
   final DateTime ngayDang;
+  final String loaiTinNhan;
+  final String tinNhanHinhAnh;
 
   const Message({
     required this.idNguoiDung,
@@ -14,6 +16,8 @@ class Message {
     required this.tenNguoiDung,
     required this.noiDung,
     required this.ngayDang,
+    required this.loaiTinNhan,
+    required this.tinNhanHinhAnh,
   });
 
   static Message fromJson(Map<String, dynamic> json) => Message(
@@ -22,6 +26,8 @@ class Message {
         tenNguoiDung: json['tenNguoiDung'],
         noiDung: json['noiDung'],
         ngayDang: json['ngayDang'],
+        loaiTinNhan: json['loaiTinNhan'],
+        tinNhanHinhAnh: json['tinNhanHinhAnh'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +36,8 @@ class Message {
         'tenNguoiDung': tenNguoiDung,
         'noiDung': noiDung,
         'ngayDang': ngayDang,
+        'loaiTinNhan': loaiTinNhan,
+        'tinNhanHinhAnh': tinNhanHinhAnh,
       };
 
   factory Message.fromDocument(DocumentSnapshot doc) {
@@ -39,6 +47,8 @@ class Message {
       tenNguoiDung: doc['tenNguoiDung'],
       noiDung: doc['noiDung'],
       ngayDang: doc['ngayDang'].toDate(),
+      loaiTinNhan: doc['loaiTinNhan'],
+      tinNhanHinhAnh: doc['tinNhanHinhAnh'],
     );
   }
 }
